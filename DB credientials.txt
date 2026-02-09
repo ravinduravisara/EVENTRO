@@ -1,8 +1,0 @@
-EVENTRO
-Eventro58790
-
-mongodb+srv://EVENTRO:Eventro@58790
-@cluster0.njion0u.mongodb.net/?appName=Cluster0
-
-
-Eventro is a full-stack MERN application designed to streamline the lifecycle of event planning, attendee registration, and real-time entry validation. Built for Admins, Organizers, and Students, the platform leverages unique QR-linked identities to ensure secure access control and provides data-driven insights through a custom analytics engine.
