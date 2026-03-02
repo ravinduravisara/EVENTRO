@@ -19,7 +19,7 @@ const createFeedback = async ({ event, user, rating, comment }) => {
 
 const getEventFeedback = async (eventId) => {
   return await Feedback.find({ event: eventId })
-    .populate('user', 'name avatar')
+    .populate('user', 'firstName lastName avatar')
     .sort({ createdAt: -1 });
 };
 
