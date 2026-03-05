@@ -182,4 +182,9 @@ const resendVerificationEmail = async (email) => {
   return { message: 'Verification email sent!' };
 };
 
-module.exports = { register, login, getProfile, updateProfile, verifyEmail, resendVerificationEmail };
+const getAllUsers = async () => {
+  const users = await User.find().select('-password -emailVerificationToken -emailVerificationTokenExpires').sort({ createdAt: -1 });
+  return { users };
+};
+
+module.exports = { register, login, getProfile, updateProfile, verifyEmail, resendVerificationEmail, getAllUsers };
