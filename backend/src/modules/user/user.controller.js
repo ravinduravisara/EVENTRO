@@ -75,4 +75,13 @@ const resendVerificationEmail = async (req, res, next) => {
   }
 };
 
-module.exports = { register, login, getProfile, updateProfile, verifyEmail, resendVerificationEmail };
+const getAllUsers = async (req, res, next) => {
+  try {
+    const result = await userService.getAllUsers();
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+};
+
+module.exports = { register, login, getProfile, updateProfile, verifyEmail, resendVerificationEmail, getAllUsers };

@@ -20,7 +20,11 @@ const getEventById = async (req, res, next) => {
 
 const createEvent = async (req, res, next) => {
   try {
-    const event = await eventService.createEvent({ ...req.body, organizer: req.user.id });
+    const imageFile = req.file || null;
+    const event = await eventService.createEvent(
+      { ...req.body, organizer: req.user.id },
+      imageFile
+    );
     res.status(201).json(event);
   } catch (error) {
     next(error);
@@ -29,7 +33,8 @@ const createEvent = async (req, res, next) => {
 
 const updateEvent = async (req, res, next) => {
   try {
-    const event = await eventService.updateEvent(req.params.id, req.body, req.user);
+    const imageFile = req.file || null;
+    const event = await eventService.updateEvent(req.params.id, req.body, req.user, imageFile);
     res.json(event);
   } catch (error) {
     next(error);
@@ -54,4 +59,18 @@ const approveEvent = async (req, res, next) => {
   }
 };
 
-module.exports = { getAllEvents, getEventById, createEvent, updateEvent, deleteEvent, approveEvent };
+const adminDeleteEvent = async (req, res, next) => {
+  try {
+    const Event = require('../../models/Event');
+    const event = await Event.findById(req.params.id);
+    if (!event) {
+      return res.status(404).json({ message: 'Event not found' });
+    }
+    await event.deleteOne();
+    res.json({ message: 'Event deleted' });
+  } catch (error) {
+    next(error);
+  }
+};
+
+module.exports = { getAllEvents, getEventById, createEvent, updateEvent, deleteEvent, approveEvent, adminDeleteEvent };
