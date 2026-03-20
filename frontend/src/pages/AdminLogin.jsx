@@ -3,14 +3,31 @@ import { useNavigate } from 'react-router-dom';
 import Input from '../components/Input';
 import Button from '../components/Button';
 
-const ADMIN_USERNAME = 'EVENTRO';
-const ADMIN_PASSWORD = 'EVENTRO1234';
+const credentialsStorageKey = 'eventro_admin_credentials';
+const DEFAULT_ADMIN_CREDENTIALS = { username: 'EVENTRO', password: 'EVENTRO1234' };
+
+const getStoredAdminCredentials = () => {
+  try {
+    const raw = localStorage.getItem(credentialsStorageKey);
+    if (!raw) {
+      return DEFAULT_ADMIN_CREDENTIALS;
+    }
+    const parsed = JSON.parse(raw);
+    const username = typeof parsed?.username === 'string' && parsed.username.trim() ? parsed.username.trim() : DEFAULT_ADMIN_CREDENTIALS.username;
+    const password = typeof parsed?.password === 'string' && parsed.password ? parsed.password : DEFAULT_ADMIN_CREDENTIALS.password;
+    return { username, password };
+  } catch {
+    return DEFAULT_ADMIN_CREDENTIALS;
+  }
+};
 
 const AdminLogin = () => {
   const navigate = useNavigate();
   const [credentials, setCredentials] = useState({ username: '', password: '' });
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+
+  const storedCredentials = getStoredAdminCredentials();
 
   useEffect(() => {
     const isAdminAuthenticated = localStorage.getItem('eventro_admin_authenticated') === 'true';
@@ -32,8 +49,9 @@ const AdminLogin = () => {
 
     // Simulate API call delay
     setTimeout(() => {
-      const isValidUser = credentials.username === ADMIN_USERNAME;
-      const isValidPassword = credentials.password === ADMIN_PASSWORD;
+      const current = getStoredAdminCredentials();
+      const isValidUser = credentials.username === current.username;
+      const isValidPassword = credentials.password === current.password;
 
       if (!isValidUser || !isValidPassword) {
         setError('Invalid admin username or password.');
@@ -77,9 +95,11 @@ const AdminLogin = () => {
             <p className="text-sm text-blue-900">
               <span className="font-semibold">Demo Credentials:</span>
               <br />
-              Username: <code className="bg-blue-100 px-2 py-1 rounded">EVENTRO</code>
+              Username:{' '}
+              <code className="bg-blue-100 px-2 py-1 rounded">{storedCredentials.username}</code>
               <br />
-              Password: <code className="bg-blue-100 px-2 py-1 rounded">EVENTRO1234</code>
+              Password:{' '}
+              <code className="bg-blue-100 px-2 py-1 rounded">{storedCredentials.password}</code>
             </p>
           </div>
 
