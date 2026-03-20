@@ -220,7 +220,7 @@ const EventroDashboard = () => {
       try {
         const [eventsRes, bookingsRes, feedbackRes] = await Promise.allSettled([
           api.get('/events'),
-          api.get('/bookings/my'),
+          api.get('/bookings'),
           api.get('/feedback'),
         ]);
 
@@ -243,7 +243,10 @@ const EventroDashboard = () => {
 
         const now = new Date();
         const upcoming = safeEvents.filter((e) => new Date(e.date) > now);
-        const totalAttendees = safeBookings.length;
+        const totalAttendees = safeBookings.reduce(
+          (sum, b) => sum + (b.ticketCount || 1),
+          0
+        );
         const totalRevenue = safeBookings.reduce(
           (sum, b) => sum + (b.totalPrice || 0),
           0

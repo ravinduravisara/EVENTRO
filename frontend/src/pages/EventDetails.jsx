@@ -6,6 +6,8 @@ import {
 } from 'lucide-react';
 import useFetch from '../hooks/useFetch';
 import api from '../services/api';
+import { useAuth } from '../context/AuthContext';
+import { useLocation } from 'react-router-dom';
 
 const STATUS_BADGE = {
   draft:     'bg-slate-500/15 text-slate-400',
@@ -20,13 +22,16 @@ const STATUS_BADGE = {
 const EventDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { data: event, loading, error, refetch } = useFetch(`/events/${id}`);
+  const { user } = useAuth();
 
   const [selectedTier, setSelectedTier] = useState(null);
   const [ticketCount, setTicketCount] = useState(1);
   const [booking, setBooking] = useState(false);
   const [bookError, setBookError] = useState('');
   const [bookSuccess, setBookSuccess] = useState('');
+  const [whatsappNumber, setWhatsappNumber] = useState('');
 
   if (loading)
     return (
@@ -59,6 +64,13 @@ const EventDetails = () => {
   const handleBook = async () => {
     if (!canBook) return;
     if (hasTiers && selectedTier === null) return setBookError('Select a ticket tier');
+
+    if (!user) {
+      setBookError('Please login to book tickets');
+      navigate('/login', { state: { from: location.pathname }, replace: true });
+      return;
+    }
+
     setBooking(true);
     setBookError('');
     setBookSuccess('');
@@ -68,9 +80,11 @@ const EventDetails = () => {
       const payload = {
         event: event._id,
         ticketCount,
+        // Price is re-calculated server-side; keep this for backward compat.
         totalPrice: tier ? tier.price * ticketCount : (event.ticketPrice || 0) * ticketCount,
       };
       if (tier) payload.tierName = tier.name;
+      if (whatsappNumber.trim()) payload.whatsappNumber = whatsappNumber.trim();
 
       await api.post('/bookings', payload);
       setBookSuccess('Booking confirmed! Check your tickets.');
@@ -250,6 +264,18 @@ const EventDetails = () => {
                 <span className="text-lg font-bold text-white w-8 text-center">{ticketCount}</span>
                 <button onClick={() => setTicketCount(ticketCount + 1)} className="w-9 h-9 rounded-lg bg-[#0B1120] border border-slate-700/50 text-white flex items-center justify-center hover:bg-slate-700/50 transition">+</button>
               </div>
+            </div>
+
+            {/* WhatsApp (optional) */}
+            <div>
+              <label className="text-xs text-slate-500 block mb-1">WhatsApp number (optional)</label>
+              <input
+                value={whatsappNumber}
+                onChange={(e) => setWhatsappNumber(e.target.value)}
+                placeholder="+94XXXXXXXXX"
+                className="w-full rounded-xl bg-[#0B1120] border border-slate-700/50 px-3 py-2 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/40"
+              />
+              <p className="mt-1 text-[11px] text-slate-500">Used only for ticket delivery (if enabled).</p>
             </div>
 
             {/* Deadline warning */}

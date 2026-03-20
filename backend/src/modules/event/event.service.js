@@ -1,4 +1,5 @@
 const Event = require('../../models/Event');
+const Booking = require('../../models/Booking');
 
 // Convert image buffer to base64 data URI for MongoDB storage
 const bufferToDataURI = (buffer, mimetype) => {
@@ -131,4 +132,47 @@ const approveEvent = async (id, status) => {
   return event;
 };
 
-module.exports = { getAllEvents, getEventById, createEvent, updateEvent, deleteEvent, approveEvent };
+const getAttendanceStats = async (eventId) => {
+  const event = await Event.findById(eventId).select('title date availableTickets totalTickets');
+  if (!event) {
+    const error = new Error('Event not found');
+    error.statusCode = 404;
+    throw error;
+  }
+
+  const [totals] = await Booking.aggregate([
+    { $match: { event: event._id, status: { $in: ['confirmed', 'used'] } } },
+    {
+      $group: {
+        _id: null,
+        soldTickets: { $sum: '$ticketCount' },
+        checkedInTickets: {
+          $sum: {
+            $cond: [{ $eq: ['$status', 'used'] }, '$ticketCount', 0],
+          },
+        },
+        totalBookings: { $sum: 1 },
+        checkedInBookings: {
+          $sum: { $cond: [{ $eq: ['$status', 'used'] }, 1, 0] },
+        },
+      },
+    },
+  ]);
+
+  const soldTickets = totals?.soldTickets || 0;
+  const checkedInTickets = totals?.checkedInTickets || 0;
+
+  return {
+    eventId: String(event._id),
+    title: event.title,
+    date: event.date,
+    totalTickets: event.totalTickets,
+    remainingSeats: event.availableTickets,
+    soldTickets,
+    checkedInTickets,
+    totalBookings: totals?.totalBookings || 0,
+    checkedInBookings: totals?.checkedInBookings || 0,
+  };
+};
+
+module.exports = { getAllEvents, getEventById, createEvent, updateEvent, deleteEvent, approveEvent, getAttendanceStats };

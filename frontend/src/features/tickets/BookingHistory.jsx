@@ -5,6 +5,7 @@ import useFetch from '../../hooks/useFetch';
 const statusStyles = {
   confirmed: 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/20',
   cancelled: 'bg-red-500/15 text-red-400 border border-red-500/20',
+  used:      'bg-sky-500/15 text-sky-400 border border-sky-500/20',
   pending:   'bg-amber-500/15 text-amber-400 border border-amber-500/20',
 };
 
@@ -67,8 +68,8 @@ const BookingHistory = () => {
                         {booking.ticketTier}
                       </span>
                     )}
-                    {booking.quantity > 1 && (
-                      <span className="text-xs text-slate-500">×{booking.quantity}</span>
+                    {booking.ticketCount > 1 && (
+                      <span className="text-xs text-slate-500">×{booking.ticketCount}</span>
                     )}
                   </div>
 

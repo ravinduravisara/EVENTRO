@@ -2,36 +2,21 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Input from '../components/Input';
 import Button from '../components/Button';
-
-const credentialsStorageKey = 'eventro_admin_credentials';
-const DEFAULT_ADMIN_CREDENTIALS = { username: 'EVENTRO', password: 'EVENTRO1234' };
-
-const getStoredAdminCredentials = () => {
-  try {
-    const raw = localStorage.getItem(credentialsStorageKey);
-    if (!raw) {
-      return DEFAULT_ADMIN_CREDENTIALS;
-    }
-    const parsed = JSON.parse(raw);
-    const username = typeof parsed?.username === 'string' && parsed.username.trim() ? parsed.username.trim() : DEFAULT_ADMIN_CREDENTIALS.username;
-    const password = typeof parsed?.password === 'string' && parsed.password ? parsed.password : DEFAULT_ADMIN_CREDENTIALS.password;
-    return { username, password };
-  } catch {
-    return DEFAULT_ADMIN_CREDENTIALS;
-  }
-};
+import api from '../services/api';
 
 const AdminLogin = () => {
   const navigate = useNavigate();
-  const [credentials, setCredentials] = useState({ username: '', password: '' });
+  const [credentials, setCredentials] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const storedCredentials = getStoredAdminCredentials();
-
   useEffect(() => {
-    const isAdminAuthenticated = localStorage.getItem('eventro_admin_authenticated') === 'true';
-    if (isAdminAuthenticated) {
+    const token = localStorage.getItem('token');
+    const storedUser = localStorage.getItem('user');
+    const user = storedUser ? (() => { try { return JSON.parse(storedUser); } catch { return null; } })() : null;
+    const isRoleAllowed = user?.role === 'admin' || user?.role === 'organizer';
+    if (token && isRoleAllowed) {
+      localStorage.setItem('eventro_admin_authenticated', 'true');
       navigate('/admin', { replace: true });
     }
   }, [navigate]);
@@ -47,22 +32,29 @@ const AdminLogin = () => {
     setError('');
     setIsLoading(true);
 
-    // Simulate API call delay
-    setTimeout(() => {
-      const current = getStoredAdminCredentials();
-      const isValidUser = credentials.username === current.username;
-      const isValidPassword = credentials.password === current.password;
+    (async () => {
+      try {
+        const { data } = await api.post('/users/login', {
+          email: credentials.email,
+          password: credentials.password,
+        });
 
-      if (!isValidUser || !isValidPassword) {
-        setError('Invalid admin username or password.');
+        const isRoleAllowed = data?.role === 'admin' || data?.role === 'organizer';
+        if (!isRoleAllowed) {
+          setError('Access denied: admin/organizer account required.');
+          return;
+        }
+
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('user', JSON.stringify(data));
+        localStorage.setItem('eventro_admin_authenticated', 'true');
+        navigate('/admin', { replace: true });
+      } catch (err) {
+        setError(err.response?.data?.message || 'Admin login failed');
+      } finally {
         setIsLoading(false);
-        return;
       }
-
-      localStorage.setItem('eventro_admin_authenticated', 'true');
-      setIsLoading(false);
-      navigate('/admin', { replace: true });
-    }, 500);
+    })();
   };
 
   return (
@@ -93,13 +85,7 @@ const AdminLogin = () => {
           {/* Demo Credentials Info */}
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
             <p className="text-sm text-blue-900">
-              <span className="font-semibold">Demo Credentials:</span>
-              <br />
-              Username:{' '}
-              <code className="bg-blue-100 px-2 py-1 rounded">{storedCredentials.username}</code>
-              <br />
-              Password:{' '}
-              <code className="bg-blue-100 px-2 py-1 rounded">{storedCredentials.password}</code>
+              <span className="font-semibold">Note:</span> Use an account with role <b>admin</b> or <b>organizer</b>.
             </p>
           </div>
 
@@ -114,14 +100,15 @@ const AdminLogin = () => {
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-5">
             <Input
-              label="Username"
-              name="username"
-              value={credentials.username}
+              label="Email"
+              name="email"
+              type="email"
+              value={credentials.email}
               onChange={handleChange}
-              placeholder="Enter admin username"
+              placeholder="admin@example.com"
               required
               disabled={isLoading}
-              autoComplete="username"
+              autoComplete="email"
             />
             <Input
               label="Password"

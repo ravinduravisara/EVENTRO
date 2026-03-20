@@ -19,6 +19,7 @@ import EventroDashboard from "./features/admin/EventroDashboard";
 import UserManagement from "./features/admin/UserManagement";
 import AdminEvents from "./features/admin/AdminEvents";
 import AdminTickets from "./features/admin/AdminTickets";
+import AdminCheckIn from "./features/admin/AdminCheckIn";
 import AdminCalendar from "./features/admin/AdminCalendar";
 import AdminTasks from "./features/admin/AdminTasks";
 import AdminMarketing from "./features/admin/AdminMarketing";
@@ -50,10 +51,23 @@ const PublicLayout = () => {
 };
 
 const AdminProtectedRoute = ({ children }) => {
-  const isAdminAuthenticated =
-    localStorage.getItem("eventro_admin_authenticated") === "true";
+  const token = localStorage.getItem('token');
+  const rawUser = localStorage.getItem('user');
+  let user = null;
+  try {
+    user = rawUser ? JSON.parse(rawUser) : null;
+  } catch {
+    user = null;
+  }
+  const isRoleAllowed = user?.role === 'admin' || user?.role === 'organizer';
+  const isAdminAuthenticated = Boolean(token) && isRoleAllowed;
 
   return isAdminAuthenticated ? children : <Navigate to="/eventro-admin" replace />;
+};
+
+const UserProtectedRoute = ({ children }) => {
+  const token = localStorage.getItem('token');
+  return token ? children : <Navigate to="/login" replace />;
 };
 
 function App() {
@@ -88,6 +102,7 @@ function App() {
           <Route path="/admin/events" element={<AdminEvents />} />
           <Route path="/admin/users" element={<UserManagement />} />
           <Route path="/admin/tickets" element={<AdminTickets />} />
+          <Route path="/admin/check-in" element={<AdminCheckIn />} />
           <Route path="/admin/calendar" element={<AdminCalendar />} />
           <Route path="/admin/tasks" element={<AdminTasks />} />
           <Route path="/admin/marketing" element={<AdminMarketing />} />
@@ -98,15 +113,64 @@ function App() {
 
         {/* User Dashboard Routes (Navbar + layout inside DashboardLayout) */}
         <Route element={<DashboardLayout />}>
-          <Route path="/profile" element={<Profile />} />
+          <Route
+            path="/profile"
+            element={
+              <UserProtectedRoute>
+                <Profile />
+              </UserProtectedRoute>
+            }
+          />
           <Route path="/events" element={<EventList />} />
-          <Route path="/events/create" element={<EventCreate />} />
-          <Route path="/events/:id/edit" element={<EventEdit />} />
+          <Route
+            path="/events/create"
+            element={
+              <UserProtectedRoute>
+                <EventCreate />
+              </UserProtectedRoute>
+            }
+          />
+          <Route
+            path="/events/:id/edit"
+            element={
+              <UserProtectedRoute>
+                <EventEdit />
+              </UserProtectedRoute>
+            }
+          />
           <Route path="/events/:id" element={<EventDetails />} />
-          <Route path="/bookings" element={<BookingHistory />} />
-          <Route path="/bookings/:id/ticket" element={<QRTicketDisplay />} />
-          <Route path="/analytics/:eventId" element={<AnalyticsDashboard />} />
-          <Route path="/feedback/:eventId" element={<FeedbackList />} />
+          <Route
+            path="/bookings"
+            element={
+              <UserProtectedRoute>
+                <BookingHistory />
+              </UserProtectedRoute>
+            }
+          />
+          <Route
+            path="/bookings/:id/ticket"
+            element={
+              <UserProtectedRoute>
+                <QRTicketDisplay />
+              </UserProtectedRoute>
+            }
+          />
+          <Route
+            path="/analytics/:eventId"
+            element={
+              <UserProtectedRoute>
+                <AnalyticsDashboard />
+              </UserProtectedRoute>
+            }
+          />
+          <Route
+            path="/feedback/:eventId"
+            element={
+              <UserProtectedRoute>
+                <FeedbackList />
+              </UserProtectedRoute>
+            }
+          />
         </Route>
       </Routes>
     </Router>
