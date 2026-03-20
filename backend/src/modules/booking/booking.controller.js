@@ -18,6 +18,15 @@ const getUserBookings = async (req, res, next) => {
   }
 };
 
+const getAllBookings = async (req, res, next) => {
+  try {
+    const bookings = await bookingService.getAllBookings({ eventId: req.query.eventId });
+    res.json(bookings);
+  } catch (error) {
+    next(error);
+  }
+};
+
 const getBookingById = async (req, res, next) => {
   try {
     const booking = await bookingService.getBookingById(req.params.id, req.user.id);
@@ -38,11 +47,16 @@ const cancelBooking = async (req, res, next) => {
 
 const validateQR = async (req, res, next) => {
   try {
-    const result = await bookingService.validateQR(req.body.qrData);
+    const result = await bookingService.validateQR({
+      ticketToken: req.body.ticketToken,
+      qrData: req.body.qrData,
+      eventId: req.body.eventId,
+      scannedByUserId: req.user?.id,
+    });
     res.json(result);
   } catch (error) {
     next(error);
   }
 };
 
-module.exports = { createBooking, getUserBookings, getBookingById, cancelBooking, validateQR };
+module.exports = { createBooking, getUserBookings, getAllBookings, getBookingById, cancelBooking, validateQR };

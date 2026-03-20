@@ -7,6 +7,7 @@ const upload = require('../../middleware/upload');
 
 router.get('/', eventController.getAllEvents);
 router.get('/:id', eventController.getEventById);
+router.get('/:id/attendance', auth, roleCheck('admin', 'organizer'), eventController.getAttendanceStats);
 router.post('/', auth, upload.single('image'), eventController.createEvent);
 router.put('/:id', auth, upload.single('image'), eventController.updateEvent);
 router.delete('/:id', auth, eventController.deleteEvent);

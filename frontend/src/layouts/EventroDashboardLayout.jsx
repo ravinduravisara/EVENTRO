@@ -6,6 +6,7 @@ import {
   CalendarDays,
   Users,
   Ticket,
+  QrCode,
   Calendar,
   CheckSquare,
   Megaphone,
@@ -24,6 +25,7 @@ const navItems = [
   { icon: CalendarDays, label: 'Events', path: '/admin/events' },
   { icon: Users, label: 'Attendees', path: '/admin/users' },
   { icon: Ticket, label: 'Tickets', path: '/admin/tickets' },
+  { icon: QrCode, label: 'Check-in', path: '/admin/check-in' },
   { icon: Calendar, label: 'Calendar', path: '/admin/calendar' },
   { icon: CheckSquare, label: 'Tasks', path: '/admin/tasks' },
   { icon: Megaphone, label: 'Marketing', path: '/admin/marketing' },
@@ -82,6 +84,8 @@ const EventroDashboardLayout = () => {
 
   const handleLogout = () => {
     localStorage.removeItem('eventro_admin_authenticated');
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
     navigate('/eventro-admin', { replace: true });
   };
 

@@ -21,9 +21,36 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      window.location.href = '/login';
+      const requestUrl = error.config?.url || '';
+      const path = window.location?.pathname || '';
+
+      // Don't hard-redirect when the user is actively trying to login/register.
+      const isAuthAttempt =
+        requestUrl.includes('/users/login') ||
+        requestUrl.includes('/users/register') ||
+        requestUrl.includes('/users/verify-email') ||
+        requestUrl.includes('/users/resend-verification');
+
+      const hadToken = Boolean(localStorage.getItem('token'));
+      const isAdminArea = path.startsWith('/admin') || path.startsWith('/eventro-admin');
+
+      // If there was no session token, let callers handle unauthenticated states
+      // (e.g., show "Please login" on protected pages) instead of making the
+      // whole site unusable.
+      if (!hadToken && !isAdminArea) {
+        return Promise.reject(error);
+      }
+
+      if (!isAuthAttempt) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+      }
+
+      if (isAdminArea) {
+        window.location.href = '/eventro-admin';
+      } else if (!isAuthAttempt) {
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(error);
   }

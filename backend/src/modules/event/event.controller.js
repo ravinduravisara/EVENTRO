@@ -73,4 +73,13 @@ const adminDeleteEvent = async (req, res, next) => {
   }
 };
 
-module.exports = { getAllEvents, getEventById, createEvent, updateEvent, deleteEvent, approveEvent, adminDeleteEvent };
+const getAttendanceStats = async (req, res, next) => {
+  try {
+    const stats = await eventService.getAttendanceStats(req.params.id);
+    res.json(stats);
+  } catch (error) {
+    next(error);
+  }
+};
+
+module.exports = { getAllEvents, getEventById, createEvent, updateEvent, deleteEvent, approveEvent, adminDeleteEvent, getAttendanceStats };

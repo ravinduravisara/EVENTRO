@@ -7,6 +7,8 @@ const AdminLayout = () => {
 
   const handleLogout = () => {
     localStorage.removeItem('eventro_admin_authenticated');
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
     navigate('/eventro-admin', { replace: true });
   };
 

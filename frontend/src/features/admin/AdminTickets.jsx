@@ -11,7 +11,7 @@ const AdminTickets = () => {
   useEffect(() => {
     const fetchBookings = async () => {
       try {
-        const res = await api.get('/bookings/my');
+        const res = await api.get('/bookings');
         const data = res.data?.bookings || res.data || [];
         setBookings(Array.isArray(data) ? data : []);
       } catch {
@@ -40,10 +40,10 @@ const AdminTickets = () => {
   };
 
   const stats = {
-    total: bookings.length,
-    confirmed: bookings.filter((b) => b.status === 'confirmed').length,
-    cancelled: bookings.filter((b) => b.status === 'cancelled').length,
-    used: bookings.filter((b) => b.status === 'used').length,
+    total: bookings.reduce((s, b) => s + (b.ticketCount || 1), 0),
+    confirmed: bookings.filter((b) => b.status === 'confirmed').reduce((s, b) => s + (b.ticketCount || 1), 0),
+    cancelled: bookings.filter((b) => b.status === 'cancelled').reduce((s, b) => s + (b.ticketCount || 1), 0),
+    used: bookings.filter((b) => b.status === 'used').reduce((s, b) => s + (b.ticketCount || 1), 0),
     revenue: bookings.reduce((s, b) => s + (b.totalPrice || 0), 0),
   };
 
