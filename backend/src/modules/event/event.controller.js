@@ -18,6 +18,27 @@ const getEventById = async (req, res, next) => {
   }
 };
 
+const getEventImage = async (req, res, next) => {
+  try {
+    const result = await eventService.getEventImage(req.params.id);
+
+    // Cache images aggressively (URLs will be cached by browser/CDN too)
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    if (result.updatedAt) {
+      res.setHeader('Last-Modified', new Date(result.updatedAt).toUTCString());
+    }
+
+    if (result.type === 'redirect') {
+      return res.redirect(302, result.url);
+    }
+
+    res.type(result.contentType || 'image/png');
+    return res.send(result.buffer);
+  } catch (error) {
+    next(error);
+  }
+};
+
 const createEvent = async (req, res, next) => {
   try {
     const imageFile = req.file || null;
@@ -82,4 +103,4 @@ const getAttendanceStats = async (req, res, next) => {
   }
 };
 
-module.exports = { getAllEvents, getEventById, createEvent, updateEvent, deleteEvent, approveEvent, adminDeleteEvent, getAttendanceStats };
+module.exports = { getAllEvents, getEventById, getEventImage, createEvent, updateEvent, deleteEvent, approveEvent, adminDeleteEvent, getAttendanceStats };

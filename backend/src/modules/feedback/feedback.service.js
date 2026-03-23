@@ -20,21 +20,49 @@ const createFeedback = async ({ event, user, rating, comment }) => {
 const getEventFeedback = async (eventId) => {
   return await Feedback.find({ event: eventId })
     .populate('user', 'firstName lastName avatar')
-    .sort({ createdAt: -1 });
+    .sort({ createdAt: -1 })
+    .lean();
 };
 
 const getEventAnalytics = async (eventId) => {
-  const feedbacks = await Feedback.find({ event: eventId });
-  const totalFeedbacks = feedbacks.length;
-  if (totalFeedbacks === 0) return { averageRating: 0, totalFeedbacks: 0, sentimentBreakdown: {} };
+  const mongoose = require('mongoose');
+  let eventObjectId;
+  try {
+    eventObjectId = mongoose.Types.ObjectId.createFromHexString(String(eventId));
+  } catch {
+    return { averageRating: 0, totalFeedbacks: 0, sentimentBreakdown: {} };
+  }
 
-  const averageRating = feedbacks.reduce((sum, f) => sum + f.rating, 0) / totalFeedbacks;
-  const sentimentBreakdown = feedbacks.reduce((acc, f) => {
-    acc[f.sentiment] = (acc[f.sentiment] || 0) + 1;
-    return acc;
-  }, {});
+  const rows = await Feedback.aggregate([
+    { $match: { event: eventObjectId } },
+    {
+      $group: {
+        _id: '$sentiment',
+        count: { $sum: 1 },
+        sumRating: { $sum: '$rating' },
+      },
+    },
+  ]);
 
-  return { averageRating: Math.round(averageRating * 10) / 10, totalFeedbacks, sentimentBreakdown };
+  if (!rows || rows.length === 0) {
+    return { averageRating: 0, totalFeedbacks: 0, sentimentBreakdown: {} };
+  }
+
+  const sentimentBreakdown = {};
+  let totalFeedbacks = 0;
+  let totalRating = 0;
+  for (const r of rows) {
+    sentimentBreakdown[r._id || 'neutral'] = r.count || 0;
+    totalFeedbacks += r.count || 0;
+    totalRating += r.sumRating || 0;
+  }
+
+  const averageRating = totalFeedbacks ? totalRating / totalFeedbacks : 0;
+  return {
+    averageRating: Math.round(averageRating * 10) / 10,
+    totalFeedbacks,
+    sentimentBreakdown,
+  };
 };
 
 module.exports = { createFeedback, getEventFeedback, getEventAnalytics };

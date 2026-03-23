@@ -149,19 +149,28 @@ const createBooking = async ({
 };
 
 const getUserBookings = async (userId) => {
-  return await Booking.find({ user: userId }).populate('event', 'title date location');
+  return await Booking.find({ user: userId })
+    .select('-qrCode -ticketJti -__v')
+    .populate('event', 'title date location')
+    .sort({ createdAt: -1 })
+    .lean();
 };
 
 const getAllBookings = async ({ eventId } = {}) => {
   const filter = {};
   if (eventId) filter.event = eventId;
   return await Booking.find(filter)
+    .select('-qrCode -ticketJti -__v')
     .populate('event', 'title date location')
-    .populate('user', 'firstName lastName email');
+    .populate('user', 'firstName lastName email')
+    .sort({ createdAt: -1 })
+    .lean();
 };
 
 const getBookingById = async (id, userId) => {
-  const booking = await Booking.findOne({ _id: id, user: userId }).populate('event');
+  const booking = await Booking.findOne({ _id: id, user: userId })
+    .populate('event')
+    .lean();
   if (!booking) {
     const error = new Error('Booking not found');
     error.statusCode = 404;

@@ -8,29 +8,72 @@ const bufferToDataURI = (buffer, mimetype) => {
 };
 
 const getAllEvents = async (query = {}) => {
-  const { category, status, page = 1, limit = 50 } = query;
+  const { category, status, page = 1, limit = 50, includeImage } = query;
   const filter = {};
   if (status) filter.status = status;
   if (category) filter.category = category;
 
+  // Keep list payload small: avoid large fields (base64 image, long text)
+  // Images are served via GET /events/:id/image for better caching + faster initial render.
+  const select = includeImage === 'true'
+    ? '-__v'
+    : '-image -description -rules -schedule -__v';
+
   const events = await Event.find(filter)
+    .select(select)
     .populate('organizer', 'firstName lastName email')
     .sort({ date: -1 })
     .skip((page - 1) * limit)
-    .limit(Number(limit));
+    .limit(Number(limit))
+    .lean();
 
   const total = await Event.countDocuments(filter);
   return { events, total, page: Number(page), pages: Math.ceil(total / limit) };
 };
 
 const getEventById = async (id) => {
-  const event = await Event.findById(id).populate('organizer', 'firstName lastName email');
+  const event = await Event.findById(id)
+    .populate('organizer', 'firstName lastName email')
+    .lean();
   if (!event) {
     const error = new Error('Event not found');
     error.statusCode = 404;
     throw error;
   }
   return event;
+};
+
+const getEventImage = async (id) => {
+  const event = await Event.findById(id).select('image updatedAt').lean();
+  if (!event) {
+    const error = new Error('Event not found');
+    error.statusCode = 404;
+    throw error;
+  }
+
+  const image = String(event.image || '');
+  if (!image) {
+    const error = new Error('Event image not found');
+    error.statusCode = 404;
+    throw error;
+  }
+
+  // If stored as a URL (e.g., Cloudinary), let callers redirect.
+  if (!image.startsWith('data:')) {
+    return { type: 'redirect', url: image, updatedAt: event.updatedAt };
+  }
+
+  const match = image.match(/^data:([^;]+);base64,(.+)$/);
+  if (!match) {
+    const error = new Error('Invalid event image format');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const contentType = match[1] || 'image/png';
+  const base64 = match[2] || '';
+  const buffer = Buffer.from(base64, 'base64');
+  return { type: 'buffer', contentType, buffer, updatedAt: event.updatedAt };
 };
 
 const createEvent = async (eventData, imageFile) => {
@@ -175,4 +218,4 @@ const getAttendanceStats = async (eventId) => {
   };
 };
 
-module.exports = { getAllEvents, getEventById, createEvent, updateEvent, deleteEvent, approveEvent, getAttendanceStats };
+module.exports = { getAllEvents, getEventById, getEventImage, createEvent, updateEvent, deleteEvent, approveEvent, getAttendanceStats };

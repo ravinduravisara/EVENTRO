@@ -183,7 +183,10 @@ const resendVerificationEmail = async (email) => {
 };
 
 const getAllUsers = async () => {
-  const users = await User.find().select('-password -emailVerificationToken -emailVerificationTokenExpires').sort({ createdAt: -1 });
+  const users = await User.find()
+    .select('-password -emailVerificationToken -emailVerificationTokenExpires')
+    .sort({ createdAt: -1 })
+    .lean();
   return { users };
 };
 
