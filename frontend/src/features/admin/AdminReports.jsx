@@ -50,7 +50,7 @@ const AdminReports = () => {
       try {
         const [evRes, bkRes, usRes] = await Promise.allSettled([
           api.get('/events'),
-          api.get('/bookings/my'),
+          api.get('/bookings'),
           api.get('/users'),
         ]);
         setEvents(

@@ -23,9 +23,20 @@ const getEventImage = async (req, res, next) => {
     const result = await eventService.getEventImage(req.params.id);
 
     // Cache images aggressively (URLs will be cached by browser/CDN too)
-    res.setHeader('Cache-Control', 'public, max-age=86400');
+    const hasVersionParam = typeof req.query?.v !== 'undefined';
+    res.setHeader(
+      'Cache-Control',
+      hasVersionParam ? 'public, max-age=31536000, immutable' : 'public, max-age=86400'
+    );
+
     if (result.updatedAt) {
-      res.setHeader('Last-Modified', new Date(result.updatedAt).toUTCString());
+      const lastModified = new Date(result.updatedAt);
+      res.setHeader('Last-Modified', lastModified.toUTCString());
+      res.setHeader('ETag', `W/"${req.params.id}-${lastModified.getTime()}"`);
+
+      if (req.fresh) {
+        return res.status(304).end();
+      }
     }
 
     if (result.type === 'redirect') {

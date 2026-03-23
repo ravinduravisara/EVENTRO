@@ -9,6 +9,48 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+:root {
+  /* Light theme scrollbar */
+  --scrollbar-track: #f1f5f9;
+  --scrollbar-thumb: #cbd5e1;
+  --scrollbar-thumb-hover: #94a3b8;
+}
+
+.dark {
+  /* Dark theme scrollbar (matches admin dashboard palette) */
+  --scrollbar-track: #0B1120;
+  --scrollbar-thumb: #0F1629;
+  --scrollbar-thumb-hover: #1a2235;
+}
+
+/* Firefox */
+@supports (scrollbar-color: auto) {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+  }
+}
+
+/* Chromium/WebKit */
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: var(--scrollbar-thumb);
+  border-radius: 999px;
+  border: 2px solid var(--scrollbar-track);
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background-color: var(--scrollbar-thumb-hover);
+}
+
 * {
   box-sizing: border-box;
 }

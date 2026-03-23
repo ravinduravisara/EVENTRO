@@ -10,7 +10,8 @@ const statusStyles = {
 };
 
 const BookingHistory = () => {
-  const { data: bookings, loading, error } = useFetch('/bookings/my');
+  // Avoid caching so new bookings appear immediately.
+  const { data: bookings, loading, error } = useFetch('/bookings/my', { cache: false });
 
   if (loading)
     return (
@@ -61,7 +62,11 @@ const BookingHistory = () => {
                   <div className="flex flex-wrap items-center gap-3 text-sm text-slate-400">
                     <span className="flex items-center gap-1.5">
                       <Calendar className="h-3.5 w-3.5" />
-                      {new Date(booking.event?.date).toLocaleDateString()}
+                      {(booking.createdAt || booking.bookingDate)
+                        ? new Date(booking.createdAt || booking.bookingDate).toLocaleDateString('en-GB')
+                        : booking.event?.date
+                          ? new Date(booking.event.date).toLocaleDateString('en-GB')
+                          : 'Date TBA'}
                     </span>
                     {booking.ticketTier && (
                       <span className="rounded-md bg-white/5 px-2 py-0.5 text-xs text-slate-300">

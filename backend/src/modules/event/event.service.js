@@ -1,6 +1,9 @@
 const Event = require('../../models/Event');
 const Booking = require('../../models/Booking');
 
+const EVENT_IMAGE_CACHE_MAX_ITEMS = 25;
+const eventImageCache = new Map();
+
 // Convert image buffer to base64 data URI for MongoDB storage
 const bufferToDataURI = (buffer, mimetype) => {
   const base64 = buffer.toString('base64');
@@ -13,22 +16,28 @@ const getAllEvents = async (query = {}) => {
   if (status) filter.status = status;
   if (category) filter.category = category;
 
+  const safePage = Math.max(1, Number(page) || 1);
+  const safeLimit = Math.max(1, Math.min(200, Number(limit) || 50));
+  const skip = (safePage - 1) * safeLimit;
+
   // Keep list payload small: avoid large fields (base64 image, long text)
   // Images are served via GET /events/:id/image for better caching + faster initial render.
   const select = includeImage === 'true'
     ? '-__v'
     : '-image -description -rules -schedule -__v';
 
-  const events = await Event.find(filter)
-    .select(select)
-    .populate('organizer', 'firstName lastName email')
-    .sort({ date: -1 })
-    .skip((page - 1) * limit)
-    .limit(Number(limit))
-    .lean();
+  const [events, total] = await Promise.all([
+    Event.find(filter)
+      .select(select)
+      .populate('organizer', 'firstName lastName email')
+      .sort({ date: -1 })
+      .skip(skip)
+      .limit(safeLimit)
+      .lean(),
+    Event.countDocuments(filter),
+  ]);
 
-  const total = await Event.countDocuments(filter);
-  return { events, total, page: Number(page), pages: Math.ceil(total / limit) };
+  return { events, total, page: safePage, pages: Math.ceil(total / safeLimit) };
 };
 
 const getEventById = async (id) => {
@@ -51,6 +60,16 @@ const getEventImage = async (id) => {
     throw error;
   }
 
+  const updatedAtMs = event.updatedAt ? new Date(event.updatedAt).getTime() : 0;
+  const cacheKey = `${id}:${updatedAtMs}`;
+  const cached = eventImageCache.get(cacheKey);
+  if (cached) {
+    // Refresh entry recency (simple LRU behavior)
+    eventImageCache.delete(cacheKey);
+    eventImageCache.set(cacheKey, cached);
+    return { ...cached, updatedAt: event.updatedAt };
+  }
+
   const image = String(event.image || '');
   if (!image) {
     const error = new Error('Event image not found');
@@ -60,7 +79,15 @@ const getEventImage = async (id) => {
 
   // If stored as a URL (e.g., Cloudinary), let callers redirect.
   if (!image.startsWith('data:')) {
-    return { type: 'redirect', url: image, updatedAt: event.updatedAt };
+    const result = { type: 'redirect', url: image, updatedAt: event.updatedAt };
+
+    eventImageCache.set(cacheKey, { type: result.type, url: result.url });
+    while (eventImageCache.size > EVENT_IMAGE_CACHE_MAX_ITEMS) {
+      const oldestKey = eventImageCache.keys().next().value;
+      eventImageCache.delete(oldestKey);
+    }
+
+    return result;
   }
 
   const match = image.match(/^data:([^;]+);base64,(.+)$/);
@@ -73,7 +100,14 @@ const getEventImage = async (id) => {
   const contentType = match[1] || 'image/png';
   const base64 = match[2] || '';
   const buffer = Buffer.from(base64, 'base64');
-  return { type: 'buffer', contentType, buffer, updatedAt: event.updatedAt };
+
+  const result = { type: 'buffer', contentType, buffer, updatedAt: event.updatedAt };
+  eventImageCache.set(cacheKey, { type: result.type, contentType: result.contentType, buffer: result.buffer });
+  while (eventImageCache.size > EVENT_IMAGE_CACHE_MAX_ITEMS) {
+    const oldestKey = eventImageCache.keys().next().value;
+    eventImageCache.delete(oldestKey);
+  }
+  return result;
 };
 
 const createEvent = async (eventData, imageFile) => {
