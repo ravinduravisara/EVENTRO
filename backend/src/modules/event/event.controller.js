@@ -35,6 +35,11 @@ const getEventImage = async (req, res, next) => {
     res.type(result.contentType || 'image/png');
     return res.send(result.buffer);
   } catch (error) {
+    // Image endpoints are typically consumed by <img> tags.
+    // For missing resources, return an empty 404 instead of JSON.
+    if ((error.statusCode || 500) === 404) {
+      return res.status(404).end();
+    }
     next(error);
   }
 };
