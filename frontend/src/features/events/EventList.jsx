@@ -37,6 +37,7 @@ const getAvailableSeats = (ev) => {
 
 const EventCard = ({ event, currentUserId, onDelete }) => {
   const navigate = useNavigate();
+  const [imgFailed, setImgFailed] = useState(false);
   const now = new Date();
   const start = new Date(event.date);
   const end = event.endDate ? new Date(event.endDate) : null;
@@ -88,8 +89,15 @@ const EventCard = ({ event, currentUserId, onDelete }) => {
       )}
       {/* Image */}
       <div className="relative h-44 bg-slate-800 overflow-hidden">
-        {event.image ? (
-          <img src={event.image} alt={event.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+        {!imgFailed ? (
+          <img
+            src={`/api/events/${event._id}/image`}
+            alt={event.title}
+            loading="lazy"
+            decoding="async"
+            onError={() => setImgFailed(true)}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-slate-600">
             <CalendarDays className="w-12 h-12" />

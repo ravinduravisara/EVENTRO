@@ -25,6 +25,7 @@ const AdminEvents = () => {
   const [filterStatus, setFilterStatus] = useState('all');
   const [actionMsg, setActionMsg] = useState({ text: '', type: 'success' });
   const [selected, setSelected] = useState(null); // event detail modal
+  const [selectedLoading, setSelectedLoading] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(null);
 
   const fetchEvents = async () => {
@@ -44,6 +45,19 @@ const AdminEvents = () => {
   const showMsg = (text, type = 'success') => {
     setActionMsg({ text, type });
     setTimeout(() => setActionMsg({ text: '', type: 'success' }), 3000);
+  };
+
+  const openDetails = async (event) => {
+    try {
+      setSelected(event);
+      setSelectedLoading(true);
+      const { data } = await api.get(`/events/${event._id}`);
+      setSelected(data);
+    } catch {
+      // Best-effort; keep list data in modal
+    } finally {
+      setSelectedLoading(false);
+    }
   };
 
   const changeStatus = async (id, status) => {
@@ -211,12 +225,20 @@ const AdminEvents = () => {
               <div key={event._id} className="bg-[#141B2D] rounded-2xl border border-slate-700/40 p-4 hover:border-slate-600/60 transition">
                 <div className="flex flex-col lg:flex-row lg:items-center gap-4">
                   {/* Image thumb */}
-                  <div className="w-full lg:w-28 h-20 rounded-xl overflow-hidden bg-slate-800 shrink-0">
-                    {event.image ? (
-                      <img src={event.image} alt="" className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-slate-600"><CalendarDays size={24} /></div>
-                    )}
+                  <div className="relative w-full lg:w-28 h-20 rounded-xl overflow-hidden bg-slate-800 shrink-0">
+                    <div className="absolute inset-0 w-full h-full flex items-center justify-center text-slate-600">
+                      <CalendarDays size={24} />
+                    </div>
+                    <img
+                      src={`/api/events/${event._id}/image`}
+                      alt=""
+                      loading="lazy"
+                      decoding="async"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                      }}
+                      className="absolute inset-0 w-full h-full object-cover"
+                    />
                   </div>
 
                   {/* Info */}
@@ -251,7 +273,7 @@ const AdminEvents = () => {
                   {/* Actions */}
                   <div className="shrink-0 flex flex-col gap-2 items-end">
                     <button
-                      onClick={() => setSelected(event)}
+                      onClick={() => openDetails(event)}
                       className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-700/40 hover:bg-slate-700 text-slate-300 transition"
                     >
                       <Eye size={13} /> View
@@ -274,13 +296,31 @@ const AdminEvents = () => {
       {selected && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => setSelected(null)}>
           <div className="bg-[#0F1629] rounded-2xl border border-slate-700/40 max-w-lg w-full max-h-[85vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-            {selected.image && <img src={selected.image} alt="" className="w-full h-48 object-cover rounded-t-2xl" />}
+            <div className="relative w-full h-48 overflow-hidden rounded-t-2xl bg-slate-800">
+              <div className="absolute inset-0 w-full h-full flex items-center justify-center text-slate-600">
+                <ImageIcon size={28} />
+              </div>
+              <img
+                src={`/api/events/${selected._id}/image`}
+                alt=""
+                loading="lazy"
+                decoding="async"
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                }}
+                className="absolute inset-0 w-full h-full object-cover"
+              />
+            </div>
             <div className="p-6 space-y-4">
               <div className="flex items-start justify-between gap-3">
                 <h2 className="text-xl font-bold text-white">{selected.title}</h2>
                 <button onClick={() => setSelected(null)} className="p-1 rounded-lg hover:bg-slate-700/40 text-slate-400"><X size={18} /></button>
               </div>
-              <p className="text-sm text-slate-400 leading-relaxed">{selected.description}</p>
+              {selectedLoading ? (
+                <p className="text-sm text-slate-500">Loading details…</p>
+              ) : (
+                <p className="text-sm text-slate-400 leading-relaxed">{selected.description}</p>
+              )}
               <div className="grid grid-cols-2 gap-y-2 text-sm">
                 <span className="text-slate-500">Status</span>
                 <span className={`capitalize font-medium ${(STATUS_CFG[selected.status] || STATUS_CFG.draft).color.split(' ')[1]}`}>{selected.status}</span>

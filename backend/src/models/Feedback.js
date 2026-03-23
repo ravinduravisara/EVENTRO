@@ -11,4 +11,7 @@ const feedbackSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+feedbackSchema.index({ event: 1, createdAt: -1 });
+feedbackSchema.index({ user: 1, event: 1 });
+
 module.exports = mongoose.model('Feedback', feedbackSchema);

@@ -38,4 +38,8 @@ const eventSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+// Indexes for common filters/sorts
+eventSchema.index({ status: 1, category: 1, date: -1 });
+eventSchema.index({ organizer: 1, date: -1 });
+
 module.exports = mongoose.model('Event', eventSchema);
