@@ -46,6 +46,11 @@ const EventCard = ({ event, currentUserId, onDelete }) => {
   const available = getAvailableSeats(event);
   const total = getTotalSeats(event);
 
+  const imageVersion = event.updatedAt ? new Date(event.updatedAt).getTime() : null;
+  const imageSrc = imageVersion
+    ? `/api/events/${event._id}/image?v=${imageVersion}`
+    : `/api/events/${event._id}/image`;
+
   const isOwner = currentUserId && (
     event.organizer === currentUserId ||
     event.organizer?._id === currentUserId
@@ -91,7 +96,7 @@ const EventCard = ({ event, currentUserId, onDelete }) => {
       <div className="relative h-44 bg-slate-800 overflow-hidden">
         {!imgFailed ? (
           <img
-            src={`/api/events/${event._id}/image`}
+            src={imageSrc}
             alt={event.title}
             loading="lazy"
             decoding="async"
