@@ -114,7 +114,16 @@ const getProfile = async (userId) => {
 };
 
 const updateProfile = async (userId, updateData) => {
-  const user = await User.findByIdAndUpdate(userId, updateData, {
+  // Only allow safe, user-editable fields.
+  const allowed = ['firstName', 'lastName', 'avatar'];
+  const safeUpdate = allowed.reduce((acc, key) => {
+    if (Object.prototype.hasOwnProperty.call(updateData || {}, key)) {
+      acc[key] = updateData[key];
+    }
+    return acc;
+  }, {});
+
+  const user = await User.findByIdAndUpdate(userId, safeUpdate, {
     new: true,
     runValidators: true,
   }).select('-password');

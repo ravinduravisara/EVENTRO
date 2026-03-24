@@ -42,15 +42,22 @@ const Home = () => {
     fetchEvents();
   }, []);
 
-  const approvedEvents = events.filter((e) => e.status === 'approved');
-  const upcomingEvents = approvedEvents.filter(
-    (e) => new Date(e.date) >= new Date()
+  // Home stats should reflect real platform activity.
+  // Created events are often `pending` until an admin approves them, so counting only
+  // `approved` would show 0 even when events exist.
+  const countedEvents = events.filter(
+    (e) => !['draft', 'rejected', 'cancelled'].includes(e.status)
   );
-  const nextEvent = upcomingEvents.sort(
+
+  const now = new Date();
+  const upcomingEvents = countedEvents.filter((e) => new Date(e.date) >= now);
+  const nextEvent = [...upcomingEvents].sort(
     (a, b) => new Date(a.date) - new Date(b.date)
   )[0];
 
-  const totalCreators = [...new Set(events.map((e) => e.organizer?._id || e.organizer))].length;
+  const totalCreators = [
+    ...new Set(countedEvents.map((e) => e.organizer?._id || e.organizer))
+  ].filter(Boolean).length;
 
   return (
     <div className="relative isolate overflow-hidden">
@@ -106,7 +113,7 @@ const Home = () => {
 
             {/* Stats */}
             <div className="mt-8 grid grid-cols-3 gap-3 sm:gap-4">
-              <Stat label="Events" value={approvedEvents.length} />
+              <Stat label="Events" value={countedEvents.length} />
               <Stat label="Creators" value={totalCreators} />
               <Stat label="Upcoming" value={upcomingEvents.length} />
             </div>
