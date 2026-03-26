@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import Input from '../components/Input';
+import { useNavigate, Link } from 'react-router-dom';
 import Button from '../components/Button';
 import api from '../services/api';
 
@@ -8,7 +7,11 @@ const AdminLogin = () => {
   const navigate = useNavigate();
   const [credentials, setCredentials] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+
+  const fieldBaseClass =
+    'w-full rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-white placeholder:text-white/40 transition duration-200 hover:border-white/25 focus:border-indigo-300/70 focus:outline-none focus:ring-2 focus:ring-indigo-400/40';
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -58,117 +61,136 @@ const AdminLogin = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-600 via-purple-600 to-red-500 px-4 py-12">
-      {/* Background Pattern */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 -left-40 w-80 h-80 bg-indigo-300 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
-        <div className="absolute top-0 -right-40 w-80 h-80 bg-purple-300 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
-        <div className="absolute -bottom-8 left-20 w-80 h-80 bg-pink-300 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-4000"></div>
-      </div>
+    
+    <div className="relative isolate min-h-screen overflow-hidden px-4 py-12 sm:px-6 lg:px-8">
+      <div><br></br><br></br><br></br><br></br><br></br><br></br></div>
+      <div className="pointer-events-none absolute inset-0 -z-10 bg-slate-950" />
+      <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(60rem_40rem_at_50%_-10%,rgba(99,102,241,0.35),transparent_60%),radial-gradient(50rem_40rem_at_90%_10%,rgba(34,211,238,0.18),transparent_55%),radial-gradient(40rem_30rem_at_10%_40%,rgba(168,85,247,0.18),transparent_55%)]" />
+      <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
 
-      {/* Login Card */}
-      <div className="relative w-full max-w-md">
-        <div className="bg-white rounded-2xl shadow-2xl border border-gray-100 p-8 space-y-8">
-          {/* Header */}
-          <div className="text-center space-y-4">
-            <div className="flex items-center justify-center">
-              <div className="w-16 h-16 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-2xl flex items-center justify-center">
-                <span className="text-3xl font-bold text-white">A</span>
+      <div className="mx-auto w-full max-w-5xl">
+        <div className="grid items-start gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:gap-10">
+          <div className="pt-4 text-center lg:pt-10 lg:text-left">
+            <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/80 backdrop-blur-xl">
+              <span className="inline-flex h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_0_4px_rgba(52,211,153,0.15)]" />
+              Restricted access • Admin portal only
+            </div>
+
+            <h1 className="mt-6 text-4xl font-extrabold tracking-tight text-white sm:text-5xl lg:text-6xl">
+              Admin{' '}
+              <span className="bg-gradient-to-r from-violet-300 via-indigo-200 to-cyan-200 bg-clip-text text-transparent">
+                Sign In
+              </span>
+            </h1>
+
+            <p className="mt-5 max-w-xl text-lg leading-relaxed text-white/70">
+              Access Eventro admin tools to review events, monitor activity, and manage platform operations.
+            </p>
+
+            <div className="mt-8 grid grid-cols-3 gap-3 sm:max-w-md">
+              <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 backdrop-blur-xl">
+                <div className="text-xl font-bold text-white">Role</div>
+                <div className="mt-1 text-xs uppercase tracking-wider text-white/60">Protected</div>
+              </div>
+              <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 backdrop-blur-xl">
+                <div className="text-xl font-bold text-white">Live</div>
+                <div className="mt-1 text-xs uppercase tracking-wider text-white/60">Monitoring</div>
+              </div>
+              <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 backdrop-blur-xl">
+                <div className="text-xl font-bold text-white">Event</div>
+                <div className="mt-1 text-xs uppercase tracking-wider text-white/60">Control</div>
               </div>
             </div>
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Admin Login</h1>
-              <p className="text-gray-600 text-sm mt-2">Enter your credentials to access the admin panel</p>
+          </div>
+
+          <div className="relative">
+            <div className="absolute -inset-2 -z-10 rounded-3xl bg-gradient-to-br from-violet-500/25 via-indigo-500/15 to-cyan-500/20 blur-2xl" />
+            <div className="rounded-3xl border border-white/10 bg-white/5 p-6 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.85)] backdrop-blur-xl sm:p-8">
+              <div className="mb-6 text-center lg:text-left">
+                <h2 className="text-2xl font-bold text-white">Admin Login</h2>
+                <p className="mt-2 text-sm text-white/65">Use an account with admin or organizer role.</p>
+              </div>
+
+              {error && (
+                <div className="mb-5 rounded-2xl border border-rose-400/30 bg-rose-500/10 p-4">
+                  <p className="text-sm text-rose-100">{error}</p>
+                </div>
+              )}
+
+              <form onSubmit={handleSubmit} className="space-y-5">
+                <div className="relative">
+                  <label htmlFor="email" className="mb-2 block text-sm font-medium text-white/80">
+                    Email
+                  </label>
+                  <input
+                    id="email"
+                    name="email"
+                    type="email"
+                    value={credentials.email}
+                    onChange={handleChange}
+                    placeholder="admin@example.com"
+                    className={fieldBaseClass}
+                    required
+                    disabled={isLoading}
+                    autoComplete="email"
+                  />
+                </div>
+
+                <div className="relative">
+                  <label htmlFor="password" className="mb-2 block text-sm font-medium text-white/80">
+                    Password
+                  </label>
+                  <input
+                    id="password"
+                    type={showPassword ? 'text' : 'password'}
+                    name="password"
+                    value={credentials.password}
+                    onChange={handleChange}
+                    placeholder="Enter admin password"
+                    className={`${fieldBaseClass} pr-16`}
+                    required
+                    disabled={isLoading}
+                    autoComplete="current-password"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((prev) => !prev)}
+                    className="absolute right-3 top-[42px] text-xs font-medium text-cyan-200 transition hover:text-cyan-100"
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  >
+                    {showPassword ? 'Hide' : 'Show'}
+                  </button>
+                </div>
+
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setError('Password reset is not available yet. Please contact the system administrator.')
+                    }
+                    className="text-sm font-medium text-cyan-200 transition hover:text-cyan-100 hover:underline"
+                  >
+                    Forgot password?
+                  </button>
+                </div>
+
+                <Button
+                  type="submit"
+                  disabled={isLoading}
+                  className="mt-6 w-full rounded-xl bg-gradient-to-r from-violet-500 to-cyan-400 py-3 font-semibold text-slate-950 transition-all hover:scale-[1.01] hover:from-violet-400 hover:to-cyan-300 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {isLoading ? 'Logging in...' : 'Login'}
+                </Button>
+              </form>
+
+             
+              <p className="mt-6 text-center text-sm text-white/50">
+                This is a secure area. Unauthorized access is prohibited.
+              </p>
             </div>
           </div>
-
-          {/* Demo Credentials Info */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <p className="text-sm text-blue-900">
-              <span className="font-semibold">Note:</span> Use an account with role <b>admin</b> or <b>organizer</b>.
-            </p>
-          </div>
-
-          {/* Error Message */}
-          {error && (
-            <div className="flex items-center gap-3 bg-red-50 border border-red-200 rounded-lg p-4">
-              <span className="text-red-600 text-2xl flex-shrink-0">⚠️</span>
-              <p className="text-sm text-red-700">{error}</p>
-            </div>
-          )}
-
-          {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <Input
-              label="Email"
-              name="email"
-              type="email"
-              value={credentials.email}
-              onChange={handleChange}
-              placeholder="admin@example.com"
-              required
-              disabled={isLoading}
-              autoComplete="email"
-            />
-            <Input
-              label="Password"
-              type="password"
-              name="password"
-              value={credentials.password}
-              onChange={handleChange}
-              placeholder="Enter admin password"
-              required
-              disabled={isLoading}
-              autoComplete="current-password"
-            />
-
-            <Button
-              type="submit"
-              variant="primary"
-              disabled={isLoading}
-              className="w-full py-3 rounded-xl flex items-center justify-center gap-2 font-semibold"
-            >
-              <span>🔐</span>
-              {isLoading ? 'Logging in...' : 'Login'}
-            </Button>
-          </form>
-
-          {/* Footer */}
-          <div className="text-center">
-            <p className="text-xs text-gray-500">
-              This is a secure area. Unauthorized access is prohibited.
-            </p>
-          </div>
-        </div>
-
-        {/* Security Badge */}
-        <div className="mt-6 text-center text-sm text-white">
-          <p>🔒 Secure Admin Portal • © 2026 Eventro</p>
         </div>
       </div>
-
-      <style>{`
-        @keyframes blob {
-          0%, 100% {
-            transform: translate(0, 0) scale(1);
-          }
-          33% {
-            transform: translate(30px, -50px) scale(1.1);
-          }
-          66% {
-            transform: translate(-20px, 20px) scale(0.9);
-          }
-        }
-        .animate-blob {
-          animation: blob 7s infinite;
-        }
-        .animation-delay-2000 {
-          animation-delay: 2s;
-        }
-        .animation-delay-4000 {
-          animation-delay: 4s;
-        }
-      `}</style>
     </div>
   );
 };
