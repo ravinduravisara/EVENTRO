@@ -105,12 +105,19 @@ const Login = () => {
                         <p className={`text-sm ${isUnverifiedEmail ? 'text-amber-100' : 'text-rose-100'}`}>{error}</p>
                         {isUnverifiedEmail && (
                           <p className="mt-2 text-sm text-amber-200/85">
-                            Please check your email for the verification link, or{' '}
+                            Please verify your account with OTP, or{' '}
+                            <Link
+                              to={`/verify-email?email=${encodeURIComponent(email)}`}
+                              className="font-semibold underline transition hover:text-amber-100"
+                            >
+                              enter OTP now
+                            </Link>
+                            {' '}or{' '}
                             <Link
                               to="/resend-verification"
                               className="font-semibold underline transition hover:text-amber-100"
                             >
-                              resend verification email
+                              resend OTP
                             </Link>
                           </p>
                         )}
@@ -182,9 +189,12 @@ const Login = () => {
                     </label>
                   </div>
                   <div className="text-sm">
-                    <a href="#" className="font-medium text-cyan-200 transition-colors hover:text-cyan-100">
+                    <Link
+                      to={`/forgot-access?email=${encodeURIComponent(email)}`}
+                      className="font-medium text-cyan-200 transition-colors hover:text-cyan-100"
+                    >
                       Forgot password?
-                    </a>
+                    </Link>
                   </div>
                 </div>
 

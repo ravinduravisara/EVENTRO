@@ -163,15 +163,12 @@ const AdminLogin = () => {
                 </div>
 
                 <div className="flex justify-end">
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setError('Password reset is not available yet. Please contact the system administrator.')
-                    }
+                  <Link
+                    to={`/forgot-access?admin=1&email=${encodeURIComponent(credentials.email)}`}
                     className="text-sm font-medium text-cyan-200 transition hover:text-cyan-100 hover:underline"
                   >
                     Forgot password?
-                  </button>
+                  </Link>
                 </div>
 
                 <Button

@@ -12,6 +12,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import VerifyEmail from "./pages/VerifyEmail";
 import ResendVerificationEmail from "./pages/ResendVerificationEmail";
+import ForgotAccessOtp from "./pages/ForgotAccessOtp";
 import Profile from "./pages/Profile";
 import EventDetails from "./pages/EventDetails";
 
@@ -85,6 +86,7 @@ function App() {
           <Route path="/register" element={<Register />} />
           <Route path="/verify-email" element={<VerifyEmail />} />
           <Route path="/resend-verification" element={<ResendVerificationEmail />} />
+          <Route path="/forgot-access" element={<ForgotAccessOtp />} />
         </Route>
 
         {/* Admin Login */}

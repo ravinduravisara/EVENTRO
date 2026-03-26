@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import Button from '../components/Button';
+import api from '../services/api';
 
 const Register = () => {
   const [form, setForm] = useState({ 
@@ -14,6 +15,9 @@ const Register = () => {
   const [avatarPreview, setAvatarPreview] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [resendMessage, setResendMessage] = useState('');
+  const [resendClicks, setResendClicks] = useState(0);
+  const [isResendingOtp, setIsResendingOtp] = useState(false);
   const [validationErrors, setValidationErrors] = useState({});
   const [touched, setTouched] = useState({});
   const [showPassword, setShowPassword] = useState(false);
@@ -146,17 +150,38 @@ const Register = () => {
     setIsLoading(true);
     setError('');
     setSuccess('');
+    setResendMessage('');
+    setResendClicks(0);
     try {
       await register(form.firstName, form.lastName, form.email, form.password, avatar);
-      setSuccess('Registration successful! Check your email to verify your account.');
-      // Redirect to login after 3 seconds
+      setSuccess('Registration successful! Enter the OTP sent to your email to verify your account.');
+      // Redirect to OTP verification after 2 seconds
       setTimeout(() => {
-        navigate('/login');
-      }, 3000);
+        navigate(`/verify-email?email=${encodeURIComponent(form.email)}`);
+      }, 2000);
     } catch (err) {
       setError(err.response?.data?.message || 'Registration failed');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    if (!form.email) return;
+
+    setIsResendingOtp(true);
+    setResendMessage('');
+
+    try {
+      const response = await api.post('/users/resend-verification-email', {
+        email: form.email,
+      });
+      setResendClicks((prev) => prev + 1);
+      setResendMessage(response.data?.message || 'OTP resent successfully.');
+    } catch (err) {
+      setResendMessage(err.response?.data?.message || 'Failed to resend OTP.');
+    } finally {
+      setIsResendingOtp(false);
     }
   };
 
@@ -227,10 +252,28 @@ const Register = () => {
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-emerald-100">{success}</p>
-                  <p className="mt-2 text-sm text-emerald-200/85">Redirecting to login in 3 seconds...</p>
-                  <Link to="/login" className="mt-3 inline-block text-sm font-semibold text-emerald-100 hover:text-emerald-50">
-                    Go to login now
+                  <p className="mt-2 text-sm text-emerald-200/85">Redirecting to OTP verification in 2 seconds...</p>
+                  <Link to={`/verify-email?email=${encodeURIComponent(form.email)}`} className="mt-3 inline-block text-sm font-semibold text-emerald-100 hover:text-emerald-50">
+                    Verify with OTP now
                   </Link>
+
+                  <div className="mt-4 flex flex-wrap items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={handleResendOtp}
+                      disabled={isResendingOtp}
+                      className="rounded-lg border border-emerald-300/40 bg-emerald-400/10 px-3 py-1.5 text-xs font-semibold text-emerald-100 transition hover:bg-emerald-400/20 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {isResendingOtp ? 'Resending OTP...' : 'Resend OTP'}
+                    </button>
+                    {resendClicks > 0 && (
+                      <span className="text-xs text-emerald-200/80">Resend clicks: {resendClicks}</span>
+                    )}
+                  </div>
+
+                  {resendMessage && (
+                    <p className="mt-2 text-xs text-emerald-100/90">{resendMessage}</p>
+                  )}
                 </div>
               </div>
             </div>
