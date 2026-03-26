@@ -88,15 +88,14 @@ const BookingHistory = () => {
                 </div>
 
                 {/* Right: action */}
-                {booking.status === 'confirmed' && (
-                  <Link
-                    to={`/bookings/${booking._id}/ticket`}
-                    className="flex shrink-0 items-center gap-1 rounded-lg bg-indigo-500/15 px-4 py-2 text-sm font-medium text-indigo-400 transition-colors hover:bg-indigo-500/25"
-                  >
-                    View Ticket
-                    <ChevronRight className="h-4 w-4" />
-                  </Link>
-                )}
+                <Link
+                  to={`/bookings/${booking._id}/ticket`}
+                  state={{ booking }}
+                  className="flex shrink-0 items-center gap-1 rounded-lg bg-indigo-500/15 px-4 py-2 text-sm font-medium text-indigo-400 transition-colors hover:bg-indigo-500/25"
+                >
+                  View Ticket
+                  <ChevronRight className="h-4 w-4" />
+                </Link>
               </div>
             </div>
           ))}
