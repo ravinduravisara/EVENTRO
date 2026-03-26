@@ -4,8 +4,6 @@ import {
   Mail,
   Send,
   Users,
-  CalendarDays,
-  TrendingUp,
   Inbox,
 } from 'lucide-react';
 import api from '../../services/api';
@@ -14,6 +12,8 @@ const AdminMarketing = () => {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [campaigns, setCampaigns] = useState([]);
+  const [sendingId, setSendingId] = useState(null);
+  const [notice, setNotice] = useState({ type: '', message: '' });
   const [form, setForm] = useState({ name: '', eventId: '', message: '' });
 
   useEffect(() => {
@@ -32,29 +32,76 @@ const AdminMarketing = () => {
   }, []);
 
   const createCampaign = () => {
-    if (!form.name.trim()) return;
-    setCampaigns([
-      ...campaigns,
+    const name = form.name.trim();
+    const message = form.message.trim();
+
+    if (!name) {
+      setNotice({ type: 'error', message: 'Campaign name is required.' });
+      return;
+    }
+    if (!message) {
+      setNotice({ type: 'error', message: 'Campaign message is required.' });
+      return;
+    }
+
+    setCampaigns((current) => [
+      ...current,
       {
         id: Date.now(),
-        name: form.name,
+        name,
         eventId: form.eventId,
         eventTitle: events.find((e) => e._id === form.eventId)?.title || '—',
-        message: form.message,
+        message,
         status: 'draft',
         createdAt: new Date().toISOString(),
         sent: 0,
       },
     ]);
+
+    setNotice({ type: 'success', message: 'Campaign draft created.' });
     setForm({ name: '', eventId: '', message: '' });
   };
 
-  const sendCampaign = (id) =>
-    setCampaigns(
-      campaigns.map((c) =>
-        c.id === id ? { ...c, status: 'sent', sent: Math.floor(Math.random() * 200) + 10 } : c
-      )
-    );
+  const sendCampaign = async (id) => {
+    const campaign = campaigns.find((item) => item.id === id);
+    if (!campaign) return;
+
+    try {
+      setSendingId(id);
+      setNotice({ type: '', message: '' });
+
+      const { data } = await api.post('/marketing/send', {
+        name: campaign.name,
+        eventId: campaign.eventId || '',
+        message: campaign.message,
+      });
+
+      setCampaigns((current) =>
+        current.map((item) =>
+          item.id === id
+            ? {
+                ...item,
+                status: 'sent',
+                sent: Number(data?.sent || 0),
+                failed: Number(data?.failed || 0),
+              }
+            : item
+        )
+      );
+
+      setNotice({
+        type: 'success',
+        message: `Campaign sent: ${data?.sent || 0} delivered${data?.failed ? `, ${data.failed} failed` : ''}.`,
+      });
+    } catch (error) {
+      setNotice({
+        type: 'error',
+        message: error?.response?.data?.message || 'Failed to send campaign.',
+      });
+    } finally {
+      setSendingId(null);
+    }
+  };
 
   if (loading) {
     return (
@@ -70,6 +117,18 @@ const AdminMarketing = () => {
         <h1 className="text-2xl font-bold">Marketing</h1>
         <p className="text-slate-400 text-sm mt-1">Create and manage email campaigns</p>
       </div>
+
+      {notice.message && (
+        <div
+          className={`rounded-xl border px-4 py-2.5 text-sm ${
+            notice.type === 'error'
+              ? 'border-red-500/30 bg-red-500/10 text-red-300'
+              : 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300'
+          }`}
+        >
+          {notice.message}
+        </div>
+      )}
 
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -164,13 +223,17 @@ const AdminMarketing = () => {
                 {c.sent > 0 && (
                   <p className="text-xs text-slate-500 mt-1">{c.sent} recipients</p>
                 )}
+                {c.failed > 0 && (
+                  <p className="text-xs text-red-400 mt-1">{c.failed} failed</p>
+                )}
               </div>
               {c.status === 'draft' && (
                 <button
                   onClick={() => sendCampaign(c.id)}
-                  className="bg-indigo-500 hover:bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition"
+                  disabled={sendingId === c.id}
+                  className="bg-indigo-500 hover:bg-indigo-600 disabled:bg-indigo-700/60 disabled:cursor-not-allowed text-white px-3 py-1.5 rounded-lg text-xs font-medium transition"
                 >
-                  Send
+                  {sendingId === c.id ? 'Sending...' : 'Send'}
                 </button>
               )}
             </div>

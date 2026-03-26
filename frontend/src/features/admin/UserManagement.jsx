@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Search, Users, Shield, UserCheck, Mail, Calendar, Ban, Edit3, Eye, AlertTriangle, RefreshCw } from 'lucide-react';
 import useFetch from '../../hooks/useFetch';
 
@@ -6,6 +6,58 @@ const UserManagement = () => {
   const { data, loading, error, refetch } = useFetch('/users');
   const [searchTerm, setSearchTerm] = useState('');
   const [filterRole, setFilterRole] = useState('all');
+  const [users, setUsers] = useState([]);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [editingUserId, setEditingUserId] = useState(null);
+  const [editRole, setEditRole] = useState('user');
+  const [actionMessage, setActionMessage] = useState('');
+
+  useEffect(() => {
+    const sourceUsers = Array.isArray(data) ? data : data?.users;
+    setUsers(Array.isArray(sourceUsers) ? sourceUsers : []);
+  }, [data]);
+
+  const showActionMessage = (message) => {
+    setActionMessage(message);
+    window.setTimeout(() => setActionMessage(''), 2200);
+  };
+
+  const handleViewUser = (user) => {
+    setSelectedUser(user);
+  };
+
+  const handleStartEdit = (user) => {
+    setEditingUserId(user._id || user.email);
+    setEditRole(user.role || 'user');
+  };
+
+  const handleSaveRole = (user) => {
+    const userKey = user._id || user.email;
+    setUsers((current) =>
+      current.map((item) =>
+        (item._id || item.email) === userKey ? { ...item, role: editRole } : item
+      )
+    );
+    setEditingUserId(null);
+    showActionMessage(`Role updated for ${user.firstName || 'user'}`);
+  };
+
+  const handleToggleBan = (user) => {
+    const userKey = user._id || user.email;
+    const nextBanned = !Boolean(user.isBanned);
+
+    setUsers((current) =>
+      current.map((item) =>
+        (item._id || item.email) === userKey ? { ...item, isBanned: nextBanned } : item
+      )
+    );
+
+    showActionMessage(
+      nextBanned
+        ? `${user.firstName || 'User'} banned successfully`
+        : `${user.firstName || 'User'} unbanned successfully`
+    );
+  };
 
   if (loading) {
     return (
@@ -36,7 +88,6 @@ const UserManagement = () => {
     );
   }
 
-  const users = data?.users || [];
   const filteredUsers = users.filter((user) => {
     const matchesSearch =
       user.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -53,6 +104,12 @@ const UserManagement = () => {
 
   return (
     <div className="space-y-6">
+      {actionMessage && (
+        <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-2.5 text-sm text-emerald-300">
+          {actionMessage}
+        </div>
+      )}
+
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold text-white">User Management</h1>
@@ -138,7 +195,27 @@ const UserManagement = () => {
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <RoleBadge role={user.role} />
+                      {editingUserId === (user._id || user.email) ? (
+                        <div className="flex items-center gap-2">
+                          <select
+                            value={editRole}
+                            onChange={(e) => setEditRole(e.target.value)}
+                            className="px-2.5 py-1.5 bg-[#0B1120] border border-gray-700/50 rounded-lg text-xs text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                          >
+                            <option value="user">User</option>
+                            <option value="organizer">Organizer</option>
+                            <option value="admin">Admin</option>
+                          </select>
+                          <button
+                            onClick={() => handleSaveRole(user)}
+                            className="px-2.5 py-1.5 rounded-lg text-xs font-medium bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30 transition"
+                          >
+                            Save
+                          </button>
+                        </div>
+                      ) : (
+                        <RoleBadge role={user.role} />
+                      )}
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2 text-gray-400 text-sm">
@@ -149,7 +226,12 @@ const UserManagement = () => {
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      {user.isEmailVerified ? (
+                      {user.isBanned ? (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-red-500/10 text-red-400 border border-red-500/20">
+                          <span className="w-1.5 h-1.5 rounded-full bg-red-400"></span>
+                          Banned
+                        </span>
+                      ) : user.isEmailVerified ? (
                         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                           <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
                           Verified
@@ -163,13 +245,25 @@ const UserManagement = () => {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-1">
-                        <button className="p-1.5 rounded-lg hover:bg-gray-700/50 text-gray-400 hover:text-white transition-colors" title="View">
+                        <button
+                          onClick={() => handleViewUser(user)}
+                          className="p-1.5 rounded-lg hover:bg-gray-700/50 text-gray-400 hover:text-white transition-colors"
+                          title="View"
+                        >
                           <Eye className="w-4 h-4" />
                         </button>
-                        <button className="p-1.5 rounded-lg hover:bg-gray-700/50 text-gray-400 hover:text-white transition-colors" title="Edit">
+                        <button
+                          onClick={() => handleStartEdit(user)}
+                          className="p-1.5 rounded-lg hover:bg-gray-700/50 text-gray-400 hover:text-white transition-colors"
+                          title="Edit"
+                        >
                           <Edit3 className="w-4 h-4" />
                         </button>
-                        <button className="p-1.5 rounded-lg hover:bg-red-500/10 text-gray-400 hover:text-red-400 transition-colors" title="Ban">
+                        <button
+                          onClick={() => handleToggleBan(user)}
+                          className="p-1.5 rounded-lg hover:bg-red-500/10 text-gray-400 hover:text-red-400 transition-colors"
+                          title={user.isBanned ? 'Unban' : 'Ban'}
+                        >
                           <Ban className="w-4 h-4" />
                         </button>
                       </div>
@@ -186,6 +280,30 @@ const UserManagement = () => {
       {filteredUsers.length > 0 && (
         <div className="text-sm text-gray-500">
           Showing {filteredUsers.length} of {users.length} users
+        </div>
+      )}
+
+      {selectedUser && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+          <div className="w-full max-w-md rounded-2xl bg-[#141B2D] border border-gray-700/50 p-5 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-white">User Details</h3>
+              <button
+                onClick={() => setSelectedUser(null)}
+                className="text-gray-400 hover:text-white text-sm"
+              >
+                Close
+              </button>
+            </div>
+
+            <div className="space-y-2 text-sm">
+              <p className="text-gray-300"><span className="text-gray-500">Name:</span> {selectedUser.firstName} {selectedUser.lastName}</p>
+              <p className="text-gray-300"><span className="text-gray-500">Email:</span> {selectedUser.email}</p>
+              <p className="text-gray-300"><span className="text-gray-500">Role:</span> {selectedUser.role || 'user'}</p>
+              <p className="text-gray-300"><span className="text-gray-500">Joined:</span> {selectedUser.createdAt ? new Date(selectedUser.createdAt).toLocaleString() : 'N/A'}</p>
+              <p className="text-gray-300"><span className="text-gray-500">Status:</span> {selectedUser.isBanned ? 'Banned' : selectedUser.isEmailVerified ? 'Verified' : 'Pending'}</p>
+            </div>
+          </div>
         </div>
       )}
     </div>

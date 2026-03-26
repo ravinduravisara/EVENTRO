@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Plus,
   CheckCircle2,
@@ -17,30 +17,52 @@ const PRIORITY_COLORS = {
 };
 
 const AdminTasks = () => {
-  const [tasks, setTasks] = useState([]);
+  const [tasks, setTasks] = useState(() => {
+    try {
+      const raw = localStorage.getItem('eventro_admin_tasks');
+      const parsed = raw ? JSON.parse(raw) : [];
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  });
   const [title, setTitle] = useState('');
   const [priority, setPriority] = useState('medium');
   const [filter, setFilter] = useState('all');
+  const [inputError, setInputError] = useState('');
+
+  useEffect(() => {
+    localStorage.setItem('eventro_admin_tasks', JSON.stringify(tasks));
+  }, [tasks]);
 
   const addTask = () => {
-    if (!title.trim()) return;
-    setTasks([
-      ...tasks,
+    const cleanTitle = title.trim();
+    if (!cleanTitle) {
+      setInputError('Please enter a task title.');
+      return;
+    }
+
+    setTasks((current) => [
+      ...current,
       {
         id: Date.now(),
-        title: title.trim(),
+        title: cleanTitle,
         priority,
         completed: false,
         createdAt: new Date().toISOString(),
       },
     ]);
+
+    setInputError('');
     setTitle('');
   };
 
   const toggleTask = (id) =>
-    setTasks(tasks.map((t) => (t.id === id ? { ...t, completed: !t.completed } : t)));
+    setTasks((current) =>
+      current.map((t) => (t.id === id ? { ...t, completed: !t.completed } : t))
+    );
 
-  const deleteTask = (id) => setTasks(tasks.filter((t) => t.id !== id));
+  const deleteTask = (id) => setTasks((current) => current.filter((t) => t.id !== id));
 
   const filtered = tasks.filter((t) => {
     if (filter === 'active') return !t.completed;
@@ -79,8 +101,16 @@ const AdminTasks = () => {
           <input
             type="text"
             value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && addTask()}
+            onChange={(e) => {
+              setTitle(e.target.value);
+              if (inputError) setInputError('');
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                addTask();
+              }
+            }}
             placeholder="Add a new task..."
             className="flex-1 min-w-[200px] bg-slate-800/60 border border-slate-700/50 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
           />
@@ -94,12 +124,19 @@ const AdminTasks = () => {
             <option value="high">High</option>
           </select>
           <button
+            type="button"
             onClick={addTask}
-            className="bg-emerald-500 hover:bg-emerald-600 text-white px-5 py-2.5 rounded-xl text-sm font-medium transition flex items-center gap-2"
+            className="bg-emerald-500 hover:bg-emerald-600 disabled:bg-emerald-700/60 disabled:cursor-not-allowed text-white px-5 py-2.5 rounded-xl text-sm font-medium transition flex items-center gap-2"
+            disabled={!title.trim()}
           >
             <Plus size={16} /> Add Task
           </button>
         </div>
+        {inputError && (
+          <p className="mt-2 flex items-center gap-1.5 text-xs text-amber-400">
+            <AlertCircle size={12} /> {inputError}
+          </p>
+        )}
       </div>
 
       {/* Filter Tabs */}
