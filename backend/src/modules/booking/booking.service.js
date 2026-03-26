@@ -150,7 +150,7 @@ const createBooking = async ({
 
 const getUserBookings = async (userId) => {
   return await Booking.find({ user: userId })
-    .select('-qrCode -ticketJti -__v')
+    .select('-ticketJti -__v')
     .populate('event', 'title date location')
     .sort({ createdAt: -1 })
     .lean();
@@ -168,15 +168,29 @@ const getAllBookings = async ({ eventId } = {}) => {
 };
 
 const getBookingById = async (id, userId) => {
-  const booking = await Booking.findOne({ _id: id, user: userId })
-    .populate('event')
-    .lean();
+  const booking = await Booking.findOne({ _id: id, user: userId }).populate('event');
   if (!booking) {
     const error = new Error('Booking not found');
     error.statusCode = 404;
     throw error;
   }
-  return booking;
+
+  // Backfill QR for legacy bookings that were created without QR data.
+  if (!booking.qrCode) {
+    try {
+      const { token: ticketToken, jti } = createTicketToken({
+        bookingId: booking._id,
+        eventId: booking.event?._id || booking.event,
+      });
+      booking.qrCode = await generateQRCode(ticketToken);
+      booking.ticketJti = jti;
+      await booking.save();
+    } catch (error) {
+      logger.error(`Failed to backfill QR for booking ${booking._id}: ${error.message}`);
+    }
+  }
+
+  return booking.toObject();
 };
 
 const cancelBooking = async (id, userId) => {

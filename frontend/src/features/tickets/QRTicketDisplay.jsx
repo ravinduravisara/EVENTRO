@@ -1,9 +1,27 @@
-import { useParams } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import useFetch from '../../hooks/useFetch';
 
 const QRTicketDisplay = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
   const { id } = useParams();
-  const { data: booking, loading, error } = useFetch(`/bookings/${id}`);
+  const bookingFromState = location.state?.booking || null;
+  const shouldFetchDetails = !bookingFromState?.qrCode;
+  const { data: bookingData, loading, error } = useFetch(
+    shouldFetchDetails ? `/bookings/${id}` : null
+  );
+
+  const bookingFromDetails = bookingData?.booking || bookingData;
+  const booking = bookingFromDetails?._id ? bookingFromDetails : bookingFromState;
+
+  const handleGoBack = () => {
+    if (window.history.length > 1) {
+      navigate(-1);
+      return;
+    }
+    navigate('/bookings');
+  };
 
   const handleDownloadQr = async () => {
     if (!booking?.qrCode) return;
@@ -34,12 +52,21 @@ const QRTicketDisplay = () => {
     }
   };
 
-  if (loading) return <p>Loading ticket...</p>;
+  if (loading && !bookingFromState) return <p>Loading ticket...</p>;
   if (error) return <p className="text-red-500">{error}</p>;
   if (!booking) return <p>Ticket not found.</p>;
 
   return (
     <div className="max-w-md mx-auto bg-white rounded-xl shadow p-6 text-center">
+      <button
+        type="button"
+        onClick={handleGoBack}
+        className="mb-4 inline-flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition"
+      >
+        <ArrowLeft className="h-4 w-4" />
+        Back
+      </button>
+
       <h2 className="text-2xl font-bold mb-4">{booking.event?.title}</h2>
       <p className="text-gray-500 mb-6">
         {booking.event?.date ? new Date(booking.event.date).toLocaleDateString('en-GB') : 'Date TBA'}
