@@ -268,4 +268,93 @@ const validateQR = async ({ ticketToken, qrData, scannedByUserId, eventId }) => 
   }
 };
 
-module.exports = { createBooking, getUserBookings, getAllBookings, getBookingById, cancelBooking, validateQR };
+const transferBooking = async ({ bookingId, fromUserId, toEmail }) => {
+  const email = String(toEmail || '').trim().toLowerCase();
+  if (!email) {
+    const error = new Error('Recipient email is required');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const booking = await Booking.findOne({ _id: bookingId, user: fromUserId }).populate('event');
+  if (!booking) {
+    const error = new Error('Booking not found');
+    error.statusCode = 404;
+    throw error;
+  }
+
+  if (booking.status !== 'confirmed') {
+    const error = new Error('Only confirmed tickets can be transferred');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const recipient = await User.findOne({ email }).select('_id firstName email');
+  if (!recipient) {
+    const error = new Error('Recipient must be a registered user');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  if (String(recipient._id) === String(fromUserId)) {
+    const error = new Error('Cannot transfer ticket to yourself');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  booking.transferredFrom = booking.transferredFrom || booking.user;
+  booking.transferredAt = new Date();
+  booking.user = recipient._id;
+
+  const expiresAt = (() => {
+    const base = booking.event?.endDate || booking.event?.date;
+    if (!base) return null;
+    const dt = new Date(base);
+    dt.setDate(dt.getDate() + 2);
+    return dt;
+  })();
+
+  const { token: ticketToken, jti } = createTicketToken({
+    bookingId: booking._id,
+    eventId: booking.event?._id || booking.event,
+    expiresAt,
+  });
+  booking.ticketJti = jti;
+  booking.qrCode = await generateQRCode(ticketToken);
+  await booking.save();
+
+  // Best-effort: notify new owner
+  try {
+    const ticketUrlBase = process.env.FRONTEND_BASE_URL || process.env.FRONTEND_URL || '';
+    const ticketUrl = ticketUrlBase
+      ? `${ticketUrlBase.replace(/\/$/, '')}/bookings/${booking._id}/ticket`
+      : '';
+
+    if (recipient.email) {
+      await sendTicketEmail({
+        to: recipient.email,
+        firstName: recipient.firstName,
+        eventTitle: booking.event?.title || 'Event',
+        eventDate: booking.event?.date ? new Date(booking.event.date).toLocaleString() : '',
+        ticketCount: booking.ticketCount,
+        totalPrice: booking.totalPrice,
+        qrCodeDataUrl: booking.qrCode,
+        ticketUrl,
+      });
+    }
+  } catch (notifyError) {
+    logger.error(`Ticket transfer notification failed: ${notifyError.message}`);
+  }
+
+  return booking.toObject();
+};
+
+module.exports = {
+  createBooking,
+  getUserBookings,
+  getAllBookings,
+  getBookingById,
+  cancelBooking,
+  validateQR,
+  transferBooking,
+};

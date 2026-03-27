@@ -32,6 +32,11 @@ const eventSchema = new mongoose.Schema(
       enum: ['draft', 'pending', 'approved', 'rejected', 'live', 'closed', 'cancelled'],
       default: 'pending',
     },
+    reminders: {
+      // Tracks reminder delivery so jobs can be safely re-run.
+      oneDay: { sentAt: { type: Date, default: null } },
+      oneHour: { sentAt: { type: Date, default: null } },
+    },
     rules: { type: String, default: '' },
     schedule: { type: String, default: '' },
   },

@@ -4,6 +4,8 @@ const bookingSchema = new mongoose.Schema(
   {
     event: { type: mongoose.Schema.Types.ObjectId, ref: 'Event', required: true },
     user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    transferredFrom: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+    transferredAt: { type: Date, default: null },
     ticketTier: { type: String, default: '' },
     ticketCount: { type: Number, required: true, default: 1 },
     totalPrice: { type: Number, required: true },
