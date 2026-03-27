@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
-    "create-admin": "node scripts/createAdmin.js"
+    "create-admin": "node scripts/createAdmin.js",
+    "reminders:run-once": "node src/scripts/runEventRemindersOnce.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
