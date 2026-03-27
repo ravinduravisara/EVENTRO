@@ -1,6 +1,8 @@
 import { Link } from 'react-router-dom';
 import { Calendar, Ticket, ChevronRight, Inbox } from 'lucide-react';
 import useFetch from '../../hooks/useFetch';
+import api from '../../services/api';
+import { useState } from 'react';
 
 const statusStyles = {
   confirmed: 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/20',
@@ -11,7 +13,43 @@ const statusStyles = {
 
 const BookingHistory = () => {
   // Avoid caching so new bookings appear immediately.
-  const { data: bookings, loading, error } = useFetch('/bookings/my', { cache: false });
+  const { data: bookings, loading, error, refetch } = useFetch('/bookings/my', { cache: false });
+  const [transferOpenId, setTransferOpenId] = useState(null);
+  const [transferEmail, setTransferEmail] = useState('');
+  const [transferLoadingId, setTransferLoadingId] = useState(null);
+  const [transferError, setTransferError] = useState('');
+  const [transferSuccess, setTransferSuccess] = useState('');
+
+  const openTransfer = (bookingId) => {
+    setTransferSuccess('');
+    setTransferError('');
+    setTransferEmail('');
+    setTransferOpenId((prev) => (prev === bookingId ? null : bookingId));
+  };
+
+  const confirmTransfer = async (bookingId) => {
+    const toEmail = String(transferEmail || '').trim();
+    if (!toEmail) {
+      setTransferError('Recipient email is required.');
+      return;
+    }
+
+    try {
+      setTransferSuccess('');
+      setTransferError('');
+      setTransferLoadingId(bookingId);
+      await api.post(`/bookings/${bookingId}/transfer`, { toEmail });
+      await refetch?.();
+      setTransferSuccess('Ticket transferred successfully.');
+      setTransferOpenId(null);
+      setTransferEmail('');
+    } catch (err) {
+      const message = err?.response?.data?.message || err?.message || 'Transfer failed';
+      setTransferError(message);
+    } finally {
+      setTransferLoadingId(null);
+    }
+  };
 
   if (loading)
     return (
@@ -88,15 +126,75 @@ const BookingHistory = () => {
                 </div>
 
                 {/* Right: action */}
-                <Link
-                  to={`/bookings/${booking._id}/ticket`}
-                  state={{ booking }}
-                  className="flex shrink-0 items-center gap-1 rounded-lg bg-indigo-500/15 px-4 py-2 text-sm font-medium text-indigo-400 transition-colors hover:bg-indigo-500/25"
-                >
-                  View Ticket
-                  <ChevronRight className="h-4 w-4" />
-                </Link>
+                <div className="flex shrink-0 items-center gap-2">
+                  {booking.status === 'confirmed' && (
+                    <button
+                      type="button"
+                      onClick={() => openTransfer(booking._id)}
+                      disabled={transferLoadingId === booking._id}
+                      className="rounded-lg bg-white/5 px-4 py-2 text-sm font-medium text-slate-200 transition-colors hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      Transfer
+                    </button>
+                  )}
+
+                  <Link
+                    to={`/bookings/${booking._id}/ticket`}
+                    state={{ booking }}
+                    className="flex items-center gap-1 rounded-lg bg-indigo-500/15 px-4 py-2 text-sm font-medium text-indigo-400 transition-colors hover:bg-indigo-500/25"
+                  >
+                    View Ticket
+                    <ChevronRight className="h-4 w-4" />
+                  </Link>
+                </div>
               </div>
+
+              {transferOpenId === booking._id && (
+                <div className="mt-4 rounded-xl border border-white/[0.06] bg-white/5 p-4">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+                    <div className="flex-1">
+                      <label className="block text-xs font-medium text-slate-300">Recipient email</label>
+                      <input
+                        value={transferEmail}
+                        onChange={(e) => setTransferEmail(e.target.value)}
+                        placeholder="student@example.com"
+                        className="mt-1 w-full rounded-lg border border-white/[0.08] bg-[#0f1526] px-3 py-2 text-sm text-white placeholder:text-slate-500 focus:border-indigo-500/40 focus:outline-none"
+                      />
+                      <p className="mt-1 text-xs text-slate-400">Recipient must already have an Eventro account.</p>
+                    </div>
+
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => confirmTransfer(booking._id)}
+                        disabled={transferLoadingId === booking._id}
+                        className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {transferLoadingId === booking._id ? 'Transferring…' : 'Confirm'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setTransferOpenId(null)}
+                        disabled={transferLoadingId === booking._id}
+                        className="rounded-lg bg-white/5 px-4 py-2 text-sm font-medium text-slate-200 transition-colors hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+
+                  {transferError && (
+                    <div className="mt-3 rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-sm text-red-300">
+                      {transferError}
+                    </div>
+                  )}
+                  {transferSuccess && (
+                    <div className="mt-3 rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-300">
+                      {transferSuccess}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           ))}
         </div>

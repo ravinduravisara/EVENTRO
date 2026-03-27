@@ -59,4 +59,25 @@ const validateQR = async (req, res, next) => {
   }
 };
 
-module.exports = { createBooking, getUserBookings, getAllBookings, getBookingById, cancelBooking, validateQR };
+const transferBooking = async (req, res, next) => {
+  try {
+    const booking = await bookingService.transferBooking({
+      bookingId: req.params.id,
+      fromUserId: req.user.id,
+      toEmail: req.body?.toEmail,
+    });
+    res.json(booking);
+  } catch (error) {
+    next(error);
+  }
+};
+
+module.exports = {
+  createBooking,
+  getUserBookings,
+  getAllBookings,
+  getBookingById,
+  cancelBooking,
+  validateQR,
+  transferBooking,
+};
