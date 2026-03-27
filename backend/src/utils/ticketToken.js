@@ -6,7 +6,7 @@ const getTicketSecret = () => process.env.TICKET_JWT_SECRET || process.env.JWT_S
 const createTicketToken = ({ bookingId, eventId, expiresAt }) => {
   const secret = getTicketSecret();
   if (!secret) {
-    const error = new Error('Ticket token secret not configured');
+    const error = new Error('Ticket token secret not configured. Set TICKET_JWT_SECRET or JWT_SECRET in backend environment.');
     error.statusCode = 500;
     throw error;
   }
@@ -34,7 +34,7 @@ const createTicketToken = ({ bookingId, eventId, expiresAt }) => {
 const verifyTicketToken = (token) => {
   const secret = getTicketSecret();
   if (!secret) {
-    const error = new Error('Ticket token secret not configured');
+    const error = new Error('Ticket token secret not configured. Set TICKET_JWT_SECRET or JWT_SECRET in backend environment.');
     error.statusCode = 500;
     throw error;
   }
