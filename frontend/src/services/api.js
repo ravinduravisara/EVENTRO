@@ -29,7 +29,10 @@ api.interceptors.response.use(
         requestUrl.includes('/users/login') ||
         requestUrl.includes('/users/register') ||
         requestUrl.includes('/users/verify-email') ||
-        requestUrl.includes('/users/resend-verification');
+        requestUrl.includes('/users/verify-email-otp') ||
+        requestUrl.includes('/users/resend-verification-email') ||
+        requestUrl.includes('/users/forgot-access-otp/request') ||
+        requestUrl.includes('/users/forgot-access-otp/verify');
 
       const hadToken = Boolean(localStorage.getItem('token'));
       const isAdminArea = path.startsWith('/admin') || path.startsWith('/eventro-admin');

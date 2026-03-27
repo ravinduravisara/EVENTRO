@@ -1,124 +1,139 @@
-import { useEffect, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import api from '../services/api';
+import Button from '../components/Button';
 
 const VerifyEmail = () => {
   const [searchParams] = useSearchParams();
-  const [status, setStatus] = useState('loading'); // loading, success, error
-  const [message, setMessage] = useState('');
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const verifyToken = async () => {
-      const token = searchParams.get('token');
-      
-      if (!token) {
-        setStatus('error');
-        setMessage('Verification token not found');
-        return;
-      }
+  const initialEmail = useMemo(() => searchParams.get('email') || '', [searchParams]);
 
-      try {
-        const response = await api.get(`/users/verify-email?token=${token}`);
-        setStatus('success');
-        setMessage(response.data.message || 'Email verified successfully!');
-        
-        // Redirect to login after 3 seconds
-        setTimeout(() => {
-          navigate('/login');
-        }, 3000);
-      } catch (error) {
-        setStatus('error');
-        setMessage(error.response?.data?.message || 'Email verification failed');
-      }
-    };
+  const [email, setEmail] = useState(initialEmail);
+  const [otp, setOtp] = useState('');
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-    verifyToken();
-  }, [searchParams, navigate]);
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    setSuccess('');
+
+    if (!email.trim() || !otp.trim()) {
+      setError('Email and OTP are required.');
+      return;
+    }
+
+    if (!/^\d{6}$/.test(otp.trim())) {
+      setError('OTP must be a 6-digit code.');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const { data } = await api.post('/users/verify-email-otp', {
+        email: email.trim(),
+        otp: otp.trim(),
+      });
+
+      setSuccess(data.message || 'Email verified successfully. You can now log in.');
+      setTimeout(() => navigate('/login'), 1500);
+    } catch (err) {
+      setError(err.response?.data?.message || 'OTP verification failed');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-100 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-2">
-            Eventro
-          </h1>
-          <p className="text-gray-600">Email Verification</p>
-        </div>
+    
+    
+    <div className="relative isolate min-h-screen overflow-hidden px-4 py-12 sm:px-6 lg:px-8">
+        <div><br></br><br></br><br></br><br></br><br></br><br></br></div>
+      <div className="pointer-events-none absolute inset-0 -z-10 bg-slate-950" />
+      <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(60rem_40rem_at_50%_-10%,rgba(99,102,241,0.35),transparent_60%),radial-gradient(50rem_40rem_at_90%_10%,rgba(34,211,238,0.18),transparent_55%),radial-gradient(40rem_30rem_at_10%_40%,rgba(168,85,247,0.18),transparent_55%)]" />
+      <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
 
-        {/* Status Card */}
-        <div className="bg-white rounded-2xl shadow-2xl p-8 space-y-6 transform transition-all hover:shadow-3xl">
-          {status === 'loading' && (
-            <div className="text-center space-y-4">
-              <div className="flex justify-center">
-                <svg className="animate-spin h-12 w-12 text-indigo-600" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-              </div>
-              <p className="text-gray-600 text-lg">Verifying your email...</p>
+      <div className="mx-auto w-full max-w-md">
+        <div className="relative">
+          <div className="absolute -inset-2 -z-10 rounded-3xl bg-gradient-to-br from-violet-500/25 via-indigo-500/15 to-cyan-500/20 blur-2xl" />
+          <div className="rounded-3xl border border-white/10 bg-white/5 p-6 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.85)] backdrop-blur-xl sm:p-8">
+            <div className="mb-6 text-center">
+              <h1 className="text-3xl font-bold text-white">Verify Your Email</h1>
+              <p className="mt-2 text-sm text-white/65">
+                Enter the 6-digit OTP sent to your email.
+              </p>
             </div>
-          )}
 
-          {status === 'success' && (
-            <div className="text-center space-y-4">
-              <div className="flex justify-center">
-                <div className="rounded-full bg-green-100 p-3">
-                  <svg className="h-12 w-12 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                  </svg>
-                </div>
+            {error && (
+              <div className="mb-4 rounded-2xl border border-rose-400/30 bg-rose-500/10 p-4">
+                <p className="text-sm text-rose-100">{error}</p>
               </div>
-              <h2 className="text-2xl font-bold text-gray-800">Success!</h2>
-              <p className="text-gray-600">{message}</p>
-              <p className="text-sm text-gray-500">Redirecting to login in 3 seconds...</p>
-              <Link 
-                to="/login" 
-                className="inline-block mt-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-semibold py-2 px-8 rounded-xl transition-all hover:scale-[1.02]"
+            )}
+
+            {success && (
+              <div className="mb-4 rounded-2xl border border-emerald-400/30 bg-emerald-500/10 p-4">
+                <p className="text-sm text-emerald-100">{success}</p>
+              </div>
+            )}
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label htmlFor="email" className="mb-2 block text-sm font-medium text-white/80">
+                  Email
+                </label>
+                <input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="john@example.com"
+                  className="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-white placeholder:text-white/40 transition duration-200 hover:border-white/25 focus:border-indigo-300/70 focus:outline-none focus:ring-2 focus:ring-indigo-400/40"
+                  required
+                />
+              </div>
+
+              <div>
+                <label htmlFor="otp" className="mb-2 block text-sm font-medium text-white/80">
+                  OTP Code
+                </label>
+                <input
+                  id="otp"
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={6}
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
+                  placeholder="123456"
+                  className="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-center text-2xl tracking-[0.4em] text-white placeholder:text-white/30 transition duration-200 hover:border-white/25 focus:border-indigo-300/70 focus:outline-none focus:ring-2 focus:ring-indigo-400/40"
+                  required
+                />
+              </div>
+
+              <Button
+                type="submit"
+                disabled={isLoading}
+                className="mt-2 w-full rounded-xl bg-gradient-to-r from-violet-500 to-cyan-400 py-3 font-semibold text-slate-950 transition-all hover:scale-[1.01] hover:from-violet-400 hover:to-cyan-300 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                Go to Login
+                {isLoading ? 'Verifying...' : 'Verify OTP'}
+              </Button>
+            </form>
+
+            <div className="mt-6 text-center text-sm text-white/65">
+              Didn't receive the code?{' '}
+              <Link to="/resend-verification" className="font-semibold text-cyan-200 hover:text-cyan-100 hover:underline">
+                Resend OTP
               </Link>
             </div>
-          )}
 
-          {status === 'error' && (
-            <div className="text-center space-y-4">
-              <div className="flex justify-center">
-                <div className="rounded-full bg-red-100 p-3">
-                  <svg className="h-12 w-12 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </div>
-              </div>
-              <h2 className="text-2xl font-bold text-gray-800">Verification Failed</h2>
-              <p className="text-gray-600">{message}</p>
-              
-              <div className="space-y-2 mt-6">
-                <p className="text-sm text-gray-600">You can:</p>
-                <div className="space-y-2">
-                  <Link 
-                    to="/resend-verification" 
-                    className="block w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-xl transition-all text-center"
-                  >
-                    Resend Verification Email
-                  </Link>
-                  <Link 
-                    to="/login" 
-                    className="block w-full bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-4 rounded-xl transition-all text-center"
-                  >
-                    Back to Login
-                  </Link>
-                </div>
-              </div>
+            <div className="mt-3 text-center text-sm">
+              <Link to="/login" className="font-medium text-white/70 hover:text-white">
+                Back to login
+              </Link>
             </div>
-          )}
+          </div>
         </div>
-
-        {/* Footer */}
-        <p className="mt-6 text-center text-sm text-gray-500">
-          Need help? <Link to="/" className="text-indigo-600 hover:text-indigo-700 font-medium">Contact support</Link>
-        </p>
       </div>
     </div>
   );

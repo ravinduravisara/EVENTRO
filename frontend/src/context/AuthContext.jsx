@@ -39,9 +39,6 @@ export const AuthProvider = ({ children }) => {
         'Content-Type': 'multipart/form-data',
       },
     });
-    localStorage.setItem('token', data.token);
-    localStorage.setItem('user', JSON.stringify(data));
-    setUser(data);
     return data;
   };
 

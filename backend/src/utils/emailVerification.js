@@ -6,9 +6,7 @@ const generateVerificationToken = () => {
   return crypto.randomBytes(32).toString('hex');
 };
 
-const sendVerificationEmail = async (email, firstName, token) => {
-  const verificationUrl = `${process.env.FRONTEND_URL}/verify-email?token=${token}`;
-  
+const sendVerificationEmail = async (email, firstName, otp) => {
   const html = `
     <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
       <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 10px 10px 0 0; text-align: center;">
@@ -19,24 +17,23 @@ const sendVerificationEmail = async (email, firstName, token) => {
         <h2 style="color: #333; margin-top: 0; font-size: 22px;">Welcome to Eventro, ${firstName}! 👋</h2>
         
         <p style="color: #666; font-size: 16px; line-height: 1.6;">
-          Thank you for signing up for Eventro. To complete your registration, please verify your email address by clicking the button below.
+          Thank you for signing up for Eventro. To complete your registration, enter this OTP code in the verification screen.
         </p>
         
-        <div style="text-align: center; margin: 30px 0;">
-          <a href="${verificationUrl}" style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; font-size: 16px;">
-            Verify Email Address
-          </a>
+        <div style="text-align: center; margin: 26px 0;">
+          <div style="display: inline-block; letter-spacing: 8px; font-size: 32px; font-weight: 800; color: #1f2937; background: #ffffff; border: 2px dashed #c7d2fe; border-radius: 10px; padding: 12px 20px;">
+            ${otp}
+          </div>
         </div>
         
-        <p style="color: #999; font-size: 14px; text-align: center;">
-          Or copy and paste this link in your browser:<br>
-          <code style="background: #fff; padding: 5px 10px; border-radius: 3px; word-break: break-all;">${verificationUrl}</code>
+        <p style="color: #666; font-size: 14px; text-align: center;">
+          This OTP expires in 10 minutes.
         </p>
         
         <hr style="border: none; border-top: 1px solid #e9ecef; margin: 30px 0;">
         
         <p style="color: #999; font-size: 13px; margin: 0;">
-          This verification link will expire in 24 hours.<br>
+          Never share this code with anyone.<br>
           If you didn't sign up for Eventro, please ignore this email.
         </p>
       </div>
@@ -46,7 +43,7 @@ const sendVerificationEmail = async (email, firstName, token) => {
   try {
     await sendEmail({
       to: email,
-      subject: 'Verify Your Email Address - Eventro',
+      subject: 'Your Eventro Verification OTP',
       html,
     });
     logger.info(`Verification email sent to ${email}`);
@@ -56,4 +53,93 @@ const sendVerificationEmail = async (email, firstName, token) => {
   }
 };
 
-module.exports = { generateVerificationToken, sendVerificationEmail };
+const sendReverificationSuccessEmail = async (email, firstName) => {
+  const safeName = firstName || 'User';
+
+  const html = `
+    <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 20px; border-radius: 10px 10px 0 0; text-align: center;">
+        <h1 style="color: white; margin: 0; font-size: 28px;">Eventro</h1>
+      </div>
+
+      <div style="background: #f8f9fa; padding: 32px 20px; border-radius: 0 0 10px 10px; border: 1px solid #e9ecef;">
+        <h2 style="color: #333; margin-top: 0; font-size: 22px;">Hi ${safeName},</h2>
+
+        <p style="color: #666; font-size: 16px; line-height: 1.6;">
+          Your Eventro account has been re-verified successfully.
+        </p>
+
+        <p style="color: #666; font-size: 16px; line-height: 1.6; margin-bottom: 0;">
+          If this was not you, please contact support immediately.
+        </p>
+      </div>
+    </div>
+  `;
+
+  try {
+    await sendEmail({
+      to: email,
+      subject: 'Eventro Account Re-Verification Successful',
+      html,
+    });
+    logger.info(`Re-verification success email sent to ${email}`);
+  } catch (error) {
+    logger.error(`Failed to send re-verification email to ${email}: ${error.message}`);
+    throw error;
+  }
+};
+
+const sendForgotAccessOtpEmail = async (email, firstName, otp) => {
+  const safeName = firstName || 'User';
+
+  const html = `
+    <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <div style="background: linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%); padding: 20px; border-radius: 10px 10px 0 0; text-align: center;">
+        <h1 style="color: white; margin: 0; font-size: 28px;">Eventro</h1>
+      </div>
+
+      <div style="background: #f8f9fa; padding: 40px 20px; border-radius: 0 0 10px 10px; border: 1px solid #e9ecef;">
+        <h2 style="color: #333; margin-top: 0; font-size: 22px;">Hi ${safeName},</h2>
+
+        <p style="color: #666; font-size: 16px; line-height: 1.6;">
+          You requested a one-time code to access your account.
+        </p>
+
+        <div style="text-align: center; margin: 26px 0;">
+          <div style="display: inline-block; letter-spacing: 8px; font-size: 32px; font-weight: 800; color: #1f2937; background: #ffffff; border: 2px dashed #93c5fd; border-radius: 10px; padding: 12px 20px;">
+            ${otp}
+          </div>
+        </div>
+
+        <p style="color: #666; font-size: 14px; text-align: center;">
+          This OTP expires in 10 minutes.
+        </p>
+
+        <hr style="border: none; border-top: 1px solid #e9ecef; margin: 30px 0;">
+
+        <p style="color: #999; font-size: 13px; margin: 0;">
+          If you did not request this code, you can safely ignore this email.
+        </p>
+      </div>
+    </div>
+  `;
+
+  try {
+    await sendEmail({
+      to: email,
+      subject: 'Your Eventro Access OTP',
+      html,
+    });
+    logger.info(`Forgot-access OTP email sent to ${email}`);
+  } catch (error) {
+    logger.error(`Failed to send forgot-access OTP email to ${email}: ${error.message}`);
+    throw error;
+  }
+};
+
+module.exports = {
+  generateVerificationToken,
+  sendVerificationEmail,
+  sendReverificationSuccessEmail,
+  sendForgotAccessOtpEmail,
+};
