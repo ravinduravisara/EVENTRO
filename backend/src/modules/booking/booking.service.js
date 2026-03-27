@@ -239,17 +239,28 @@ const validateQR = async ({ ticketToken, qrData, scannedByUserId, eventId }) => 
 
   try {
     const decoded = verifyTicketToken(rawToken);
-    if (!decoded || decoded.typ !== 'eventro_ticket' || !decoded.bid) {
+    if (!decoded || decoded.typ !== 'eventro_ticket' || !decoded.bid || !decoded.eid || !decoded.jti) {
       return { valid: false, message: 'Invalid ticket token' };
     }
 
-    if (eventId && decoded.eid && String(eventId) !== String(decoded.eid)) {
+    if (eventId && String(eventId) !== String(decoded.eid)) {
       return { valid: false, message: 'Ticket is for a different event' };
     }
 
+    // Strict validation: booking must exist and belong to same event.
+    // We check this before attempting to mark used so we can provide a precise error.
+    const booking = await Booking.findById(decoded.bid).select('event status ticketJti').lean();
+    if (!booking) return { valid: false, message: 'Booking not found' };
+    if (String(booking.event) !== String(decoded.eid)) {
+      return { valid: false, message: 'Ticket is for a different event' };
+    }
+    if (booking.status === 'used') return { valid: false, message: 'Ticket already used' };
+    if (booking.status === 'cancelled') return { valid: false, message: 'Booking cancelled' };
+    if (booking.status !== 'confirmed') return { valid: false, message: 'Ticket is not valid for entry' };
+
     // Atomic one-time check-in
     const updated = await Booking.findOneAndUpdate(
-      { _id: decoded.bid, status: 'confirmed', ticketJti: decoded.jti || '' },
+      { _id: decoded.bid, status: 'confirmed', ticketJti: decoded.jti },
       { $set: { status: 'used', checkedInAt: new Date(), checkedInBy: scannedByUserId || null } },
       { new: true }
     ).populate('event user');
@@ -258,12 +269,11 @@ const validateQR = async ({ ticketToken, qrData, scannedByUserId, eventId }) => 
       return { valid: true, booking: updated };
     }
 
-    const existing = await Booking.findById(decoded.bid).populate('event user');
-    if (!existing) return { valid: false, message: 'Booking not found' };
-    if (existing.status === 'used') return { valid: false, message: 'Ticket already used' };
-    if (existing.status === 'cancelled') return { valid: false, message: 'Booking cancelled' };
-    return { valid: false, message: 'Ticket validation failed' };
-  } catch {
+    // If we reached here it means the token decoded, booking exists and is confirmed,
+    // but the atomic update did not match. This strongly suggests token reuse or a mismatch.
+    return { valid: false, message: 'Ticket validation failed (one-time token mismatch)' };
+  } catch (err) {
+    // Hide internal errors but keep message consistent.
     return { valid: false, message: 'Invalid or expired ticket token' };
   }
 };
