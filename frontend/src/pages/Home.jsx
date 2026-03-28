@@ -20,9 +20,7 @@ const FeatureCard = ({ title, desc, icon }) => (
 const Stat = ({ label, value }) => (
   <div className="rounded-2xl border border-white/10 bg-white/5 px-5 py-4 backdrop-blur-xl">
     <div className="text-2xl font-bold text-white">{value}</div>
-    <div className="mt-1 text-xs uppercase tracking-wider text-white/60">
-      {label}
-    </div>
+    <div className="mt-1 text-xs uppercase tracking-wider text-white/60">{label}</div>
   </div>
 );
 
@@ -33,7 +31,7 @@ const Home = () => {
   useEffect(() => {
     const fetchEvents = async () => {
       try {
-        const res = await api.get("/events");
+        const res = await api.get('/events');
         setEvents(res.data?.events || res.data || []);
       } catch {
         setEvents([]);
@@ -48,17 +46,17 @@ const Home = () => {
   // Created events are often `pending` until an admin approves them, so counting only
   // `approved` would show 0 even when events exist.
   const countedEvents = events.filter(
-    (e) => !["draft", "rejected", "cancelled"].includes(e.status),
+    (e) => !['draft', 'rejected', 'cancelled'].includes(e.status)
   );
 
   const now = new Date();
   const upcomingEvents = countedEvents.filter((e) => new Date(e.date) >= now);
   const nextEvent = [...upcomingEvents].sort(
-    (a, b) => new Date(a.date) - new Date(b.date),
+    (a, b) => new Date(a.date) - new Date(b.date)
   )[0];
 
   const totalCreators = [
-    ...new Set(countedEvents.map((e) => e.organizer?._id || e.organizer)),
+    ...new Set(countedEvents.map((e) => e.organizer?._id || e.organizer))
   ].filter(Boolean).length;
 
   return (
@@ -96,24 +94,14 @@ const Home = () => {
             {/* CTA */}
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row lg:justify-start">
               <Link to="/events" className="w-full sm:w-auto">
-                <Button className="w-full sm:w-auto">Browse Events</Button>
+                <Button className="w-full sm:w-auto">
+                  Browse Events
+                </Button>
               </Link>
 
               <Link to="/events/create" className="w-full sm:w-auto">
                 <Button variant="secondary" className="w-full sm:w-auto">
                   Create Event
-                </Button>
-              </Link>
-
-              <Link to="/submit-feedback" className="w-full sm:w-auto">
-                <Button variant="secondary" className="w-full sm:w-auto">
-                  Submit Feedback
-                </Button>
-              </Link>
-
-              <Link to="/become-sponsor" className="w-full sm:w-auto">
-                <Button variant="secondary" className="w-full sm:w-auto">
-                  Become a Sponsor
                 </Button>
               </Link>
             </div>
@@ -151,15 +139,9 @@ const Home = () => {
                       </div>
                     </div>
                     <div className="rounded-2xl bg-white/10 px-3 py-2 text-xs text-white/70 ring-1 ring-white/10">
-                      {new Date(nextEvent.date).toLocaleDateString("en-US", {
-                        month: "short",
-                        day: "numeric",
-                      })}
-                      {" • "}
-                      {new Date(nextEvent.date).toLocaleTimeString("en-US", {
-                        hour: "numeric",
-                        minute: "2-digit",
-                      })}
+                      {new Date(nextEvent.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                      {' • '}
+                      {new Date(nextEvent.date).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
                     </div>
                   </div>
 
@@ -169,7 +151,7 @@ const Home = () => {
                         Location
                       </div>
                       <div className="mt-2 text-sm font-semibold text-white">
-                        {nextEvent.location || "TBA"}
+                        {nextEvent.location || 'TBA'}
                       </div>
                     </div>
 
@@ -181,10 +163,7 @@ const Home = () => {
                         {nextEvent.totalTickets || 0} Seats
                       </div>
                       <div className="mt-1 text-sm text-white/60">
-                        {nextEvent.availableTickets ??
-                          nextEvent.totalTickets ??
-                          0}{" "}
-                        spots left
+                        {nextEvent.availableTickets ?? nextEvent.totalTickets ?? 0} spots left
                       </div>
                     </div>
                   </div>
@@ -194,9 +173,7 @@ const Home = () => {
                       <div className="flex items-center justify-between text-sm text-white/70">
                         <span>Registrations</span>
                         <span className="font-semibold text-white">
-                          {(nextEvent.totalTickets || 0) -
-                            (nextEvent.availableTickets || 0)}{" "}
-                          / {nextEvent.totalTickets}
+                          {(nextEvent.totalTickets || 0) - (nextEvent.availableTickets || 0)} / {nextEvent.totalTickets}
                         </span>
                       </div>
                       <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-white/10">
@@ -204,10 +181,9 @@ const Home = () => {
                           className="h-full rounded-full bg-gradient-to-r from-violet-400 to-cyan-300"
                           style={{
                             width: `${Math.round(
-                              ((nextEvent.totalTickets -
-                                (nextEvent.availableTickets || 0)) /
+                              ((nextEvent.totalTickets - (nextEvent.availableTickets || 0)) /
                                 nextEvent.totalTickets) *
-                                100,
+                                100
                             )}%`,
                           }}
                         />
@@ -216,19 +192,16 @@ const Home = () => {
                   )}
 
                   <div className="mt-6 flex flex-wrap gap-2">
-                    {[
-                      "Live updates",
-                      "QR check-in",
-                      "Smart reminders",
-                      "Analytics",
-                    ].map((t) => (
-                      <span
-                        key={t}
-                        className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/70"
-                      >
-                        {t}
-                      </span>
-                    ))}
+                    {["Live updates", "QR check-in", "Smart reminders", "Analytics"].map(
+                      (t) => (
+                        <span
+                          key={t}
+                          className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/70"
+                        >
+                          {t}
+                        </span>
+                      )
+                    )}
                   </div>
                 </>
               ) : (
@@ -237,12 +210,9 @@ const Home = () => {
                   <div className="mb-4 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-white/10">
                     <CalendarX className="h-7 w-7 text-white/40" />
                   </div>
-                  <h3 className="text-lg font-semibold text-white">
-                    No upcoming events yet
-                  </h3>
+                  <h3 className="text-lg font-semibold text-white">No upcoming events yet</h3>
                   <p className="mt-2 max-w-xs text-sm text-white/50">
-                    Be the first to create an event and it will be highlighted
-                    right here.
+                    Be the first to create an event and it will be highlighted right here.
                   </p>
                   <Link to="/events/create" className="mt-5">
                     <Button className="text-sm">Create Your First Event</Button>
@@ -260,8 +230,7 @@ const Home = () => {
               Everything you need to run events like a pro
             </h2>
             <p className="mt-3 text-white/70">
-              Beautiful pages, easy management, and the tools to grow
-              attendance.
+              Beautiful pages, easy management, and the tools to grow attendance.
             </p>
           </div>
 
@@ -290,8 +259,8 @@ const Home = () => {
             Ready to launch your next event?
           </h3>
           <p className="mx-auto mt-3 max-w-2xl text-white/70">
-            Create an event in minutes and share it anywhere. Keep everything
-            organized, from planning to the final check-in.
+            Create an event in minutes and share it anywhere. Keep everything organized,
+            from planning to the final check-in.
           </p>
           <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Link to="/events/create" className="w-full sm:w-auto">
