@@ -1,9 +1,4 @@
-import {
-  BrowserRouter as Router,
-  Routes,
-  Route,
-  Navigate,
-} from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 
 import DashboardLayout from "./layouts/DashboardLayout";
 import EventroDashboardLayout from "./layouts/EventroDashboardLayout";
@@ -20,8 +15,6 @@ import ResendVerificationEmail from "./pages/ResendVerificationEmail";
 import ForgotAccessOtp from "./pages/ForgotAccessOtp";
 import Profile from "./pages/Profile";
 import EventDetails from "./pages/EventDetails";
-import SubmitFeedback from "./pages/SubmitFeedback";
-import BecomeSponsor from "./pages/BecomeSponsor";
 
 import EventroDashboard from "./features/admin/EventroDashboard";
 import UserManagement from "./features/admin/UserManagement";
@@ -34,8 +27,6 @@ import AdminMarketing from "./features/admin/AdminMarketing";
 import AdminReports from "./features/admin/AdminReports";
 import AdminSettings from "./features/admin/AdminSettings";
 import AdminHelp from "./features/admin/AdminHelp";
-import AdminFeedback from "./features/admin/AdminFeedback";
-import AdminSponsorship from "./features/admin/AdminSponsorship";
 
 import EventList from "./features/events/EventList";
 import EventCreate from "./features/events/EventCreate";
@@ -61,26 +52,22 @@ const PublicLayout = () => {
 };
 
 const AdminProtectedRoute = ({ children }) => {
-  const token = localStorage.getItem("token");
-  const rawUser = localStorage.getItem("user");
+  const token = localStorage.getItem('token');
+  const rawUser = localStorage.getItem('user');
   let user = null;
   try {
     user = rawUser ? JSON.parse(rawUser) : null;
   } catch {
     user = null;
   }
-  const isRoleAllowed = user?.role === "admin" || user?.role === "organizer";
+  const isRoleAllowed = user?.role === 'admin' || user?.role === 'organizer';
   const isAdminAuthenticated = Boolean(token) && isRoleAllowed;
 
-  return isAdminAuthenticated ? (
-    children
-  ) : (
-    <Navigate to="/eventro-admin" replace />
-  );
+  return isAdminAuthenticated ? children : <Navigate to="/eventro-admin" replace />;
 };
 
 const UserProtectedRoute = ({ children }) => {
-  const token = localStorage.getItem("token");
+  const token = localStorage.getItem('token');
   return token ? children : <Navigate to="/login" replace />;
 };
 
@@ -91,8 +78,6 @@ function App() {
         {/* ✅ Public pages (Navbar visible + full width allowed) */}
         <Route element={<PublicLayout />}>
           <Route path="/" element={<Home />} />
-          <Route path="/submit-feedback" element={<SubmitFeedback />} />
-          <Route path="/become-sponsor" element={<BecomeSponsor />} />
         </Route>
 
         {/* Auth Routes (usually no navbar) */}
@@ -100,10 +85,7 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/verify-email" element={<VerifyEmail />} />
-          <Route
-            path="/resend-verification"
-            element={<ResendVerificationEmail />}
-          />
+          <Route path="/resend-verification" element={<ResendVerificationEmail />} />
           <Route path="/forgot-access" element={<ForgotAccessOtp />} />
         </Route>
 
@@ -127,8 +109,6 @@ function App() {
           <Route path="/admin/tasks" element={<AdminTasks />} />
           <Route path="/admin/marketing" element={<AdminMarketing />} />
           <Route path="/admin/reports" element={<AdminReports />} />
-          <Route path="/admin/feedback" element={<AdminFeedback />} />
-          <Route path="/admin/sponsorship" element={<AdminSponsorship />} />
           <Route path="/admin/settings" element={<AdminSettings />} />
           <Route path="/admin/help" element={<AdminHelp />} />
         </Route>

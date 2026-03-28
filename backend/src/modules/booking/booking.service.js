@@ -1,46 +1,43 @@
-const Booking = require("../../models/Booking");
-const Event = require("../../models/Event");
-const { generateQRCode } = require("../../utils/qrCodeGenerator");
-const User = require("../../models/User");
-const {
-  createTicketToken,
-  verifyTicketToken,
-} = require("../../utils/ticketToken");
-const { sendTicketEmail } = require("../../utils/ticketEmail");
-const { sendTicketWhatsApp } = require("../../utils/whatsapp");
-const logger = require("../../utils/logger");
+const Booking = require('../../models/Booking');
+const Event = require('../../models/Event');
+const { generateQRCode } = require('../../utils/qrCodeGenerator');
+const User = require('../../models/User');
+const { createTicketToken, verifyTicketToken } = require('../../utils/ticketToken');
+const { sendTicketEmail } = require('../../utils/ticketEmail');
+const { sendTicketWhatsApp } = require('../../utils/whatsapp');
+const logger = require('../../utils/logger');
 
 const createBooking = async ({
   event: eventId,
   user,
   ticketCount = 1,
-  whatsappNumber = "",
+  whatsappNumber = '',
   tierName,
   ticketTier,
   tierId,
 }) => {
   if (!user) {
-    const error = new Error("Authentication required");
+    const error = new Error('Authentication required');
     error.statusCode = 401;
     throw error;
   }
 
   const event = await Event.findById(eventId);
   if (!event) {
-    const error = new Error("Event not found");
+    const error = new Error('Event not found');
     error.statusCode = 404;
     throw error;
   }
 
   const qty = Number(ticketCount || 1);
   if (!Number.isFinite(qty) || qty < 1) {
-    const error = new Error("Invalid ticket quantity");
+    const error = new Error('Invalid ticket quantity');
     error.statusCode = 400;
     throw error;
   }
 
   if (Number(event.availableTickets || 0) < qty) {
-    const error = new Error("Not enough tickets available");
+    const error = new Error('Not enough tickets available');
     error.statusCode = 400;
     throw error;
   }
@@ -50,8 +47,8 @@ const createBooking = async ({
 
   let chosenTier = null;
   if (hasTiers) {
-    const wantedId = String(tierId || "").trim();
-    const wantedName = String(tierName || ticketTier || "").trim();
+    const wantedId = String(tierId || '').trim();
+    const wantedName = String(tierName || ticketTier || '').trim();
 
     if (wantedId) {
       chosenTier = event.ticketTiers.id(wantedId) || null;
@@ -60,30 +57,26 @@ const createBooking = async ({
     }
 
     if (!chosenTier) {
-      const error = new Error("Select a ticket tier");
+      const error = new Error('Select a ticket tier');
       error.statusCode = 400;
       throw error;
     }
 
-    const tierAvail =
-      Number(chosenTier.totalQuantity || 0) -
-      Number(chosenTier.soldQuantity || 0);
+    const tierAvail = Number(chosenTier.totalQuantity || 0) - Number(chosenTier.soldQuantity || 0);
     if (tierAvail < qty) {
-      const error = new Error("Not enough tickets available for this tier");
+      const error = new Error('Not enough tickets available for this tier');
       error.statusCode = 400;
       throw error;
     }
   }
 
-  const pricePerTicket = hasTiers
-    ? Number(chosenTier.price || 0)
-    : Number(event.ticketPrice || 0);
+  const pricePerTicket = hasTiers ? Number(chosenTier.price || 0) : Number(event.ticketPrice || 0);
   const totalPrice = pricePerTicket * qty;
 
   const booking = await Booking.create({
     event: eventId,
     user,
-    ticketTier: chosenTier?.name || "",
+    ticketTier: chosenTier?.name || '',
     ticketCount: qty,
     totalPrice,
     whatsappNumber,
@@ -117,22 +110,21 @@ const createBooking = async ({
 
   // Best-effort delivery
   try {
-    const dbUser = await User.findById(user).select("firstName email");
+    const dbUser = await User.findById(user).select('firstName email');
     const recipientEmail = dbUser?.email;
     const recipientFirstName = dbUser?.firstName;
 
-    const ticketUrlBase =
-      process.env.FRONTEND_BASE_URL || process.env.FRONTEND_URL || "";
+    const ticketUrlBase = process.env.FRONTEND_BASE_URL || process.env.FRONTEND_URL || '';
     const ticketUrl = ticketUrlBase
-      ? `${ticketUrlBase.replace(/\/$/, "")}/bookings/${booking._id}/ticket`
-      : "";
+      ? `${ticketUrlBase.replace(/\/$/, '')}/bookings/${booking._id}/ticket`
+      : '';
 
     if (recipientEmail) {
       await sendTicketEmail({
         to: recipientEmail,
         firstName: recipientFirstName,
         eventTitle: event.title,
-        eventDate: event.date ? new Date(event.date).toLocaleString() : "",
+        eventDate: event.date ? new Date(event.date).toLocaleString() : '',
         ticketCount: booking.ticketCount,
         totalPrice: booking.totalPrice,
         qrCodeDataUrl: booking.qrCode,
@@ -144,7 +136,7 @@ const createBooking = async ({
       await sendTicketWhatsApp({
         to: booking.whatsappNumber,
         eventTitle: event.title,
-        eventDate: event.date ? new Date(event.date).toLocaleString() : "",
+        eventDate: event.date ? new Date(event.date).toLocaleString() : '',
         ticketCount: booking.ticketCount,
         ticketUrl,
       });
@@ -158,8 +150,8 @@ const createBooking = async ({
 
 const getUserBookings = async (userId) => {
   return await Booking.find({ user: userId })
-    .select("-ticketJti -__v")
-    .populate("event", "title date location")
+    .select('-ticketJti -__v')
+    .populate('event', 'title date location')
     .sort({ createdAt: -1 })
     .lean();
 };
@@ -168,19 +160,17 @@ const getAllBookings = async ({ eventId } = {}) => {
   const filter = {};
   if (eventId) filter.event = eventId;
   return await Booking.find(filter)
-    .select("-qrCode -ticketJti -__v")
-    .populate("event", "title date location")
-    .populate("user", "firstName lastName email")
+    .select('-qrCode -ticketJti -__v')
+    .populate('event', 'title date location')
+    .populate('user', 'firstName lastName email')
     .sort({ createdAt: -1 })
     .lean();
 };
 
 const getBookingById = async (id, userId) => {
-  const booking = await Booking.findOne({ _id: id, user: userId }).populate(
-    "event",
-  );
+  const booking = await Booking.findOne({ _id: id, user: userId }).populate('event');
   if (!booking) {
-    const error = new Error("Booking not found");
+    const error = new Error('Booking not found');
     error.statusCode = 404;
     throw error;
   }
@@ -196,9 +186,7 @@ const getBookingById = async (id, userId) => {
       booking.ticketJti = jti;
       await booking.save();
     } catch (error) {
-      logger.error(
-        `Failed to backfill QR for booking ${booking._id}: ${error.message}`,
-      );
+      logger.error(`Failed to backfill QR for booking ${booking._id}: ${error.message}`);
     }
   }
 
@@ -208,11 +196,11 @@ const getBookingById = async (id, userId) => {
 const cancelBooking = async (id, userId) => {
   const booking = await Booking.findOne({ _id: id, user: userId });
   if (!booking) {
-    const error = new Error("Booking not found");
+    const error = new Error('Booking not found');
     error.statusCode = 404;
     throw error;
   }
-  booking.status = "cancelled";
+  booking.status = 'cancelled';
   await booking.save();
 
   const event = await Event.findById(booking.event);
@@ -222,29 +210,20 @@ const cancelBooking = async (id, userId) => {
   return booking;
 };
 
-const validateQR = async ({
-  ticketToken,
-  qrData,
-  scannedByUserId,
-  eventId,
-}) => {
+const validateQR = async ({ ticketToken, qrData, scannedByUserId, eventId }) => {
   // Backward compat: older clients send {qrData} JSON
-  const rawToken = ticketToken || "";
-  if (!rawToken && typeof qrData === "string") {
+  const rawToken = ticketToken || '';
+  if (!rawToken && typeof qrData === 'string') {
     // Try legacy JSON QR
     try {
       const parsed = JSON.parse(qrData);
       if (parsed && parsed.bookingId) {
-        const booking = await Booking.findById(parsed.bookingId).populate(
-          "event user",
-        );
-        if (!booking) return { valid: false, message: "Booking not found" };
-        if (booking.status === "used")
-          return { valid: false, message: "Ticket already used" };
-        if (booking.status === "cancelled")
-          return { valid: false, message: "Booking cancelled" };
+        const booking = await Booking.findById(parsed.bookingId).populate('event user');
+        if (!booking) return { valid: false, message: 'Booking not found' };
+        if (booking.status === 'used') return { valid: false, message: 'Ticket already used' };
+        if (booking.status === 'cancelled') return { valid: false, message: 'Booking cancelled' };
 
-        booking.status = "used";
+        booking.status = 'used';
         booking.checkedInAt = new Date();
         booking.checkedInBy = scannedByUserId || null;
         await booking.save();
@@ -253,55 +232,38 @@ const validateQR = async ({
     } catch {
       // fallthrough
     }
-    return { valid: false, message: "Invalid QR data" };
+    return { valid: false, message: 'Invalid QR data' };
   }
 
-  if (!rawToken) return { valid: false, message: "Missing ticket token" };
+  if (!rawToken) return { valid: false, message: 'Missing ticket token' };
 
   try {
     const decoded = verifyTicketToken(rawToken);
-    if (
-      !decoded ||
-      decoded.typ !== "eventro_ticket" ||
-      !decoded.bid ||
-      !decoded.eid ||
-      !decoded.jti
-    ) {
-      return { valid: false, message: "Invalid ticket token" };
+    if (!decoded || decoded.typ !== 'eventro_ticket' || !decoded.bid || !decoded.eid || !decoded.jti) {
+      return { valid: false, message: 'Invalid ticket token' };
     }
 
     if (eventId && String(eventId) !== String(decoded.eid)) {
-      return { valid: false, message: "Ticket is for a different event" };
+      return { valid: false, message: 'Ticket is for a different event' };
     }
 
     // Strict validation: booking must exist and belong to same event.
     // We check this before attempting to mark used so we can provide a precise error.
-    const booking = await Booking.findById(decoded.bid)
-      .select("event status ticketJti")
-      .lean();
-    if (!booking) return { valid: false, message: "Booking not found" };
+    const booking = await Booking.findById(decoded.bid).select('event status ticketJti').lean();
+    if (!booking) return { valid: false, message: 'Booking not found' };
     if (String(booking.event) !== String(decoded.eid)) {
-      return { valid: false, message: "Ticket is for a different event" };
+      return { valid: false, message: 'Ticket is for a different event' };
     }
-    if (booking.status === "used")
-      return { valid: false, message: "Ticket already used" };
-    if (booking.status === "cancelled")
-      return { valid: false, message: "Booking cancelled" };
-    if (booking.status !== "confirmed")
-      return { valid: false, message: "Ticket is not valid for entry" };
+    if (booking.status === 'used') return { valid: false, message: 'Ticket already used' };
+    if (booking.status === 'cancelled') return { valid: false, message: 'Booking cancelled' };
+    if (booking.status !== 'confirmed') return { valid: false, message: 'Ticket is not valid for entry' };
 
     // Atomic one-time check-in
     const updated = await Booking.findOneAndUpdate(
-      { _id: decoded.bid, status: "confirmed", ticketJti: decoded.jti },
-      {
-        $set: {
-          status: "used",
-          checkedInAt: new Date(),
-          checkedInBy: scannedByUserId || null,
-        },
-      },
-      { new: true },
-    ).populate("event user");
+      { _id: decoded.bid, status: 'confirmed', ticketJti: decoded.jti },
+      { $set: { status: 'used', checkedInAt: new Date(), checkedInBy: scannedByUserId || null } },
+      { new: true }
+    ).populate('event user');
 
     if (updated) {
       return { valid: true, booking: updated };
@@ -309,51 +271,43 @@ const validateQR = async ({
 
     // If we reached here it means the token decoded, booking exists and is confirmed,
     // but the atomic update did not match. This strongly suggests token reuse or a mismatch.
-    return {
-      valid: false,
-      message: "Ticket validation failed (one-time token mismatch)",
-    };
+    return { valid: false, message: 'Ticket validation failed (one-time token mismatch)' };
   } catch (err) {
     // Hide internal errors but keep message consistent.
-    return { valid: false, message: "Invalid or expired ticket token" };
+    return { valid: false, message: 'Invalid or expired ticket token' };
   }
 };
 
 const transferBooking = async ({ bookingId, fromUserId, toEmail }) => {
-  const email = String(toEmail || "")
-    .trim()
-    .toLowerCase();
+  const email = String(toEmail || '').trim().toLowerCase();
   if (!email) {
-    const error = new Error("Recipient email is required");
+    const error = new Error('Recipient email is required');
     error.statusCode = 400;
     throw error;
   }
 
-  const booking = await Booking.findOne({
-    _id: bookingId,
-    user: fromUserId,
-  }).populate("event");
+  const booking = await Booking.findOne({ _id: bookingId, user: fromUserId }).populate('event');
   if (!booking) {
-    const error = new Error("Booking not found");
+    const error = new Error('Booking not found');
     error.statusCode = 404;
     throw error;
   }
 
-  if (booking.status !== "confirmed") {
-    const error = new Error("Only confirmed tickets can be transferred");
+  if (booking.status !== 'confirmed') {
+    const error = new Error('Only confirmed tickets can be transferred');
     error.statusCode = 400;
     throw error;
   }
 
-  const recipient = await User.findOne({ email }).select("_id firstName email");
+  const recipient = await User.findOne({ email }).select('_id firstName email');
   if (!recipient) {
-    const error = new Error("Recipient must be a registered user");
+    const error = new Error('Recipient must be a registered user');
     error.statusCode = 400;
     throw error;
   }
 
   if (String(recipient._id) === String(fromUserId)) {
-    const error = new Error("Cannot transfer ticket to yourself");
+    const error = new Error('Cannot transfer ticket to yourself');
     error.statusCode = 400;
     throw error;
   }
@@ -381,20 +335,17 @@ const transferBooking = async ({ bookingId, fromUserId, toEmail }) => {
 
   // Best-effort: notify new owner
   try {
-    const ticketUrlBase =
-      process.env.FRONTEND_BASE_URL || process.env.FRONTEND_URL || "";
+    const ticketUrlBase = process.env.FRONTEND_BASE_URL || process.env.FRONTEND_URL || '';
     const ticketUrl = ticketUrlBase
-      ? `${ticketUrlBase.replace(/\/$/, "")}/bookings/${booking._id}/ticket`
-      : "";
+      ? `${ticketUrlBase.replace(/\/$/, '')}/bookings/${booking._id}/ticket`
+      : '';
 
     if (recipient.email) {
       await sendTicketEmail({
         to: recipient.email,
         firstName: recipient.firstName,
-        eventTitle: booking.event?.title || "Event",
-        eventDate: booking.event?.date
-          ? new Date(booking.event.date).toLocaleString()
-          : "",
+        eventTitle: booking.event?.title || 'Event',
+        eventDate: booking.event?.date ? new Date(booking.event.date).toLocaleString() : '',
         ticketCount: booking.ticketCount,
         totalPrice: booking.totalPrice,
         qrCodeDataUrl: booking.qrCode,
@@ -408,26 +359,6 @@ const transferBooking = async ({ bookingId, fromUserId, toEmail }) => {
   return booking.toObject();
 };
 
-const getUserAttendedEvents = async (userId) => {
-  const rows = await Booking.find({ user: userId, status: "used" })
-    .select("event checkedInAt")
-    .populate("event", "title date location status")
-    .sort({ checkedInAt: -1, createdAt: -1 })
-    .lean();
-
-  const events = [];
-  const seen = new Set();
-  for (const r of rows) {
-    const ev = r.event;
-    if (!ev?._id) continue;
-    const id = String(ev._id);
-    if (seen.has(id)) continue;
-    seen.add(id);
-    events.push(ev);
-  }
-  return events;
-};
-
 module.exports = {
   createBooking,
   getUserBookings,
@@ -436,5 +367,4 @@ module.exports = {
   cancelBooking,
   validateQR,
   transferBooking,
-  getUserAttendedEvents,
 };
