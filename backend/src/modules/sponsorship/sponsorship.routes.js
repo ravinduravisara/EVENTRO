@@ -17,6 +17,14 @@ router.get(
   sponsorshipController.listInquiries,
 );
 
+// Admin/organizer: approve inquiry + email response
+router.patch(
+  "/inquiries/:id/approve",
+  auth,
+  roleCheck("admin", "organizer"),
+  sponsorshipController.approveInquiry,
+);
+
 // Deals + analytics
 router.use("/", dealsRoutes);
 

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import api from "../../services/api";
 
 const AdminSponsorship = () => {
@@ -6,8 +6,15 @@ const AdminSponsorship = () => {
   const [eventId, setEventId] = useState("");
   const [analytics, setAnalytics] = useState(null);
   const [deals, setDeals] = useState([]);
+  const [inquiries, setInquiries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+
+  const [responseDrafts, setResponseDrafts] = useState({});
+  const [approvingId, setApprovingId] = useState("");
+
+  const lastFetchIdRef = useRef(0);
 
   const [dealForm, setDealForm] = useState({
     sponsorName: "",
@@ -37,15 +44,28 @@ const AdminSponsorship = () => {
 
   const fetchAll = async (eid) => {
     try {
+      const fetchId = (lastFetchIdRef.current += 1);
       setError("");
-      const [aRes, dRes] = await Promise.allSettled([
+      setSuccess("");
+      const [aRes, iRes, dRes] = await Promise.allSettled([
         api.get("/sponsorship/analytics/revenue"),
+        api.get("/sponsorship/inquiries"),
         eid
           ? api.get(`/sponsorship/deals/event/${eid}`)
           : Promise.resolve({ data: [] }),
       ]);
+
+      if (fetchId !== lastFetchIdRef.current) return;
+
       setAnalytics(
         aRes.status === "fulfilled" ? aRes.value.data : { events: [] },
+      );
+      setInquiries(
+        iRes.status === "fulfilled"
+          ? Array.isArray(iRes.value.data)
+            ? iRes.value.data
+            : []
+          : [],
       );
       setDeals(
         dRes.status === "fulfilled"
@@ -63,6 +83,33 @@ const AdminSponsorship = () => {
     }
   };
 
+  const approveInquiry = async (inquiryId) => {
+    setError("");
+    setSuccess("");
+    const msg = String(responseDrafts?.[inquiryId] || "").trim();
+    if (!msg) {
+      setError("Response message is required");
+      return;
+    }
+
+    try {
+      setApprovingId(inquiryId);
+      await api.patch(`/sponsorship/inquiries/${inquiryId}/approve`, {
+        responseMessage: msg,
+      });
+      setSuccess("Approval email sent");
+      await fetchAll(eventId);
+    } catch (err) {
+      setError(
+        err?.response?.data?.message ||
+          err?.message ||
+          "Failed to approve inquiry",
+      );
+    } finally {
+      setApprovingId("");
+    }
+  };
+
   useEffect(() => {
     const init = async () => {
       try {
@@ -73,8 +120,9 @@ const AdminSponsorship = () => {
           : [];
         setEvents(list);
         const defaultId = list?.[0]?._id || "";
-        setEventId((prev) => prev || defaultId);
-        await fetchAll((prev) => prev);
+        const initialEventId = eventId || defaultId;
+        setEventId(initialEventId);
+        await fetchAll(initialEventId);
       } catch (e) {
         setError(
           e?.response?.data?.message || e?.message || "Failed to load events",
@@ -173,6 +221,12 @@ const AdminSponsorship = () => {
       {error && (
         <div className="rounded-xl border border-red-300 bg-red-50 text-red-700 px-4 py-3 text-sm">
           {error}
+        </div>
+      )}
+
+      {success && (
+        <div className="rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700 px-4 py-3 text-sm">
+          {success}
         </div>
       )}
 
@@ -327,6 +381,91 @@ const AdminSponsorship = () => {
           {deals.length === 0 && (
             <div className="text-sm text-slate-600 dark:text-slate-400">
               No deals yet for this event.
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#0F1629] p-5">
+        <h2 className="font-semibold">Sponsor Inquiries</h2>
+        <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+          Submissions from the “Become a Sponsor” page.
+        </p>
+        <div className="mt-3 space-y-2">
+          {inquiries.map((q) => (
+            <div
+              key={q._id}
+              className="rounded-xl border border-slate-200 dark:border-slate-700 p-3"
+            >
+              <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-2">
+                <div>
+                  <div className="text-sm font-semibold">
+                    {q.companyName} <span className="text-xs text-slate-500">({q.status})</span>
+                  </div>
+                  <div className="text-xs text-slate-600 dark:text-slate-400">
+                    {q.inquiryType} • tier {q.tier} • budget {q.budget || 0}
+                  </div>
+                  <div className="mt-1 text-xs text-slate-600 dark:text-slate-400">
+                    {q.contactName} • {q.email}{q.phone ? ` • ${q.phone}` : ""}
+                  </div>
+                  {q.adminRespondedAt && (
+                    <div className="mt-1 text-xs text-slate-500">
+                      Responded: {new Date(q.adminRespondedAt).toLocaleString()}
+                    </div>
+                  )}
+                  {q.message && (
+                    <div className="mt-2 text-sm text-slate-700 dark:text-slate-200">
+                      {q.message}
+                    </div>
+                  )}
+                </div>
+                <div className="text-xs text-slate-500">
+                  {q.createdAt ? new Date(q.createdAt).toLocaleString() : ""}
+                </div>
+              </div>
+
+              <div className="mt-3 grid grid-cols-1 md:grid-cols-4 gap-3">
+                <div className="md:col-span-3">
+                  <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">
+                    Response email
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={
+                      responseDrafts?.[q._id] ??
+                      q.adminResponseMessage ??
+                      ""
+                    }
+                    onChange={(e) =>
+                      setResponseDrafts((p) => ({
+                        ...p,
+                        [q._id]: e.target.value,
+                      }))
+                    }
+                    placeholder="Write your response to the sponsor..."
+                    className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-sm"
+                  />
+                </div>
+                <div className="md:col-span-1 flex md:justify-end items-end">
+                  <button
+                    disabled={approvingId === q._id}
+                    onClick={() => approveInquiry(q._id)}
+                    className="w-full inline-flex items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-400 px-4 py-2 text-sm font-semibold hover:bg-emerald-500/25 disabled:opacity-60"
+                  >
+                    {approvingId === q._id
+                      ? "Sending..."
+                      : q.status === "approved"
+                        ? "Resend Approval"
+                        : "Approve & Send"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+
+          {inquiries.length === 0 && (
+            <div className="text-sm text-slate-600 dark:text-slate-400">
+              No sponsor inquiries yet.
             </div>
           )}
         </div>

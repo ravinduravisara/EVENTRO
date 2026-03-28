@@ -1,4 +1,13 @@
 const SponsorInquiry = require("../../models/SponsorInquiry");
+const { sendEmail } = require("../../utils/emailer");
+
+const escapeHtml = (value) =>
+  String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\"/g, "&quot;")
+    .replace(/'/g, "&#039;");
 
 const createInquiry = async (payload) => {
   const inquiryType = String(payload?.inquiryType || "custom")
@@ -69,4 +78,58 @@ const listInquiries = async () => {
   return await SponsorInquiry.find({}).sort({ createdAt: -1 }).lean();
 };
 
-module.exports = { createInquiry, listInquiries };
+const approveInquiry = async ({ inquiryId, responseMessage, adminUser }) => {
+  const id = String(inquiryId || "").trim();
+  const msg = String(responseMessage || "").trim();
+  if (!id) {
+    const error = new Error("inquiryId is required");
+    error.statusCode = 400;
+    throw error;
+  }
+  if (!msg) {
+    const error = new Error("responseMessage is required");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const inquiry = await SponsorInquiry.findById(id);
+  if (!inquiry) {
+    const error = new Error("Inquiry not found");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  // Send the email first; only mark approved if email send succeeds.
+  const subject = "Eventro Sponsorship Inquiry Approved";
+  const html = `
+    <div style="font-family:Arial,sans-serif;line-height:1.5">
+      <h2 style="margin:0 0 12px">Sponsorship Inquiry Approved</h2>
+      <p style="margin:0 0 10px">Hi ${escapeHtml(inquiry.contactName)},</p>
+      <p style="margin:0 0 10px">Thank you for your interest in sponsoring our events.</p>
+      <div style="margin:12px 0;padding:12px;border:1px solid #e5e7eb;border-radius:10px">
+        <div><strong>Company:</strong> ${escapeHtml(inquiry.companyName)}</div>
+        <div><strong>Tier:</strong> ${escapeHtml(inquiry.tier)}</div>
+        ${Number.isFinite(inquiry.budget) ? `<div><strong>Budget:</strong> ${escapeHtml(inquiry.budget)}</div>` : ""}
+      </div>
+      <p style="margin:0 0 8px"><strong>Response from our team:</strong></p>
+      <div style="white-space:pre-wrap;margin:0 0 12px;padding:12px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:10px">${escapeHtml(msg)}</div>
+      <p style="margin:0">Regards,<br/>Eventro Team</p>
+    </div>
+  `;
+
+  await sendEmail({
+    to: inquiry.email,
+    subject,
+    html,
+  });
+
+  inquiry.status = "approved";
+  inquiry.adminResponseMessage = msg;
+  inquiry.adminRespondedAt = new Date();
+  inquiry.adminRespondedBy = adminUser?._id || adminUser?.id || null;
+  await inquiry.save();
+
+  return inquiry.toObject();
+};
+
+module.exports = { createInquiry, listInquiries, approveInquiry };

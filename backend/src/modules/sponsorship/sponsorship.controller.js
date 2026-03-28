@@ -18,4 +18,17 @@ const listInquiries = async (req, res, next) => {
   }
 };
 
-module.exports = { createInquiry, listInquiries };
+const approveInquiry = async (req, res, next) => {
+  try {
+    const updated = await sponsorshipService.approveInquiry({
+      inquiryId: req.params.id,
+      responseMessage: req.body?.responseMessage,
+      adminUser: req.user,
+    });
+    res.json(updated);
+  } catch (error) {
+    next(error);
+  }
+};
+
+module.exports = { createInquiry, listInquiries, approveInquiry };

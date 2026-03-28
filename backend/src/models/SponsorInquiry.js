@@ -33,6 +33,11 @@ const sponsorInquirySchema = new mongoose.Schema(
       enum: ["new", "reviewing", "approved", "rejected"],
       default: "new",
     },
+
+    // Admin response (sent on approval)
+    adminResponseMessage: { type: String, default: "", trim: true },
+    adminRespondedAt: { type: Date, default: null },
+    adminRespondedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
   },
   { timestamps: true },
 );
