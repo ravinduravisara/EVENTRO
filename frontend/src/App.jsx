@@ -20,6 +20,7 @@ import ResendVerificationEmail from "./pages/ResendVerificationEmail";
 import ForgotAccessOtp from "./pages/ForgotAccessOtp";
 import Profile from "./pages/Profile";
 import EventDetails from "./pages/EventDetails";
+import Payment from "./pages/Payment";
 import SubmitFeedback from "./pages/SubmitFeedback";
 import BecomeSponsor from "./pages/BecomeSponsor";
 
@@ -31,6 +32,7 @@ import AdminCheckIn from "./features/admin/AdminCheckIn";
 import AdminCalendar from "./features/admin/AdminCalendar";
 import AdminTasks from "./features/admin/AdminTasks";
 import AdminMarketing from "./features/admin/AdminMarketing";
+import AdminRefunds from "./features/admin/AdminRefunds";
 import AdminReports from "./features/admin/AdminReports";
 import AdminSettings from "./features/admin/AdminSettings";
 import AdminHelp from "./features/admin/AdminHelp";
@@ -43,6 +45,7 @@ import EventEdit from "./features/events/EventEdit";
 
 import BookingHistory from "./features/tickets/BookingHistory";
 import QRTicketDisplay from "./features/tickets/QRTicketDisplay";
+import TransactionHistory from "./features/tickets/TransactionHistory";
 
 import AnalyticsDashboard from "./features/analytics/AnalyticsDashboard";
 import FeedbackList from "./features/analytics/FeedbackList";
@@ -126,6 +129,7 @@ function App() {
           <Route path="/admin/calendar" element={<AdminCalendar />} />
           <Route path="/admin/tasks" element={<AdminTasks />} />
           <Route path="/admin/marketing" element={<AdminMarketing />} />
+          <Route path="/admin/refunds" element={<AdminRefunds />} />
           <Route path="/admin/reports" element={<AdminReports />} />
           <Route path="/admin/feedback" element={<AdminFeedback />} />
           <Route path="/admin/sponsorship" element={<AdminSponsorship />} />
@@ -162,10 +166,26 @@ function App() {
           />
           <Route path="/events/:id" element={<EventDetails />} />
           <Route
+            path="/events/:id/payment"
+            element={
+              <UserProtectedRoute>
+                <Payment />
+              </UserProtectedRoute>
+            }
+          />
+          <Route
             path="/bookings"
             element={
               <UserProtectedRoute>
                 <BookingHistory />
+              </UserProtectedRoute>
+            }
+          />
+          <Route
+            path="/transactions"
+            element={
+              <UserProtectedRoute>
+                <TransactionHistory />
               </UserProtectedRoute>
             }
           />

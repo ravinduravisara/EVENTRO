@@ -7,6 +7,7 @@ const {
   verifyTicketToken,
 } = require("../../utils/ticketToken");
 const { sendTicketEmail } = require("../../utils/ticketEmail");
+const { sendInvoiceEmail, sendRefundInvoiceEmail } = require("../../utils/invoiceEmail");
 const { sendTicketWhatsApp } = require("../../utils/whatsapp");
 const logger = require("../../utils/logger");
 
@@ -138,6 +139,29 @@ const createBooking = async ({
         qrCodeDataUrl: booking.qrCode,
         ticketUrl,
       });
+
+      // Generate and send payment invoice for paid bookings.
+      if (Number(booking.totalPrice || 0) > 0) {
+        const unitPrice = booking.ticketCount > 0
+          ? Number(booking.totalPrice || 0) / Number(booking.ticketCount || 1)
+          : Number(booking.totalPrice || 0);
+
+        const invoice = await sendInvoiceEmail({
+          to: recipientEmail,
+          firstName: recipientFirstName,
+          bookingId: booking._id,
+          issueDate: new Date(),
+          eventTitle: event.title,
+          eventDate: event.date ? new Date(event.date).toLocaleString() : "",
+          ticketCount: booking.ticketCount,
+          unitPrice,
+          totalPrice: booking.totalPrice,
+        });
+
+        booking.invoiceNumber = invoice.invoiceNumber;
+        booking.invoiceIssuedAt = invoice.issuedAt;
+        await booking.save();
+      }
     }
 
     if (booking.whatsappNumber && ticketUrl) {
@@ -239,6 +263,12 @@ const validateQR = async ({
           "event user",
         );
         if (!booking) return { valid: false, message: "Booking not found" };
+        if (booking.refundRequestStatus === "approved") {
+          return {
+            valid: false,
+            message: "Refund approved - ticket is no longer valid",
+          };
+        }
         if (booking.status === "used")
           return { valid: false, message: "Ticket already used" };
         if (booking.status === "cancelled")
@@ -277,11 +307,17 @@ const validateQR = async ({
     // Strict validation: booking must exist and belong to same event.
     // We check this before attempting to mark used so we can provide a precise error.
     const booking = await Booking.findById(decoded.bid)
-      .select("event status ticketJti")
+      .select("event status ticketJti refundRequestStatus")
       .lean();
     if (!booking) return { valid: false, message: "Booking not found" };
     if (String(booking.event) !== String(decoded.eid)) {
       return { valid: false, message: "Ticket is for a different event" };
+    }
+    if (booking.refundRequestStatus === "approved") {
+      return {
+        valid: false,
+        message: "Refund approved - ticket is no longer valid",
+      };
     }
     if (booking.status === "used")
       return { valid: false, message: "Ticket already used" };
@@ -428,6 +464,139 @@ const getUserAttendedEvents = async (userId) => {
   return events;
 };
 
+const requestRefund = async ({ bookingId, userId, reason, bankDetails }) => {
+  const booking = await Booking.findOne({ _id: bookingId, user: userId });
+  if (!booking) {
+    const error = new Error('Booking not found');
+    error.statusCode = 404;
+    throw error;
+  }
+
+  if (booking.status !== 'confirmed') {
+    const error = new Error('Only confirmed bookings can request a refund');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  if (Number(booking.totalPrice || 0) <= 0) {
+    const error = new Error('Free bookings are not eligible for refunds');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  if (booking.refundRequestStatus === 'pending') {
+    const error = new Error('Refund request is already pending admin approval');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const bankName = String(bankDetails?.bankName || '').trim();
+  const accountHolderName = String(bankDetails?.accountHolderName || '').trim();
+  const accountNumber = String(bankDetails?.accountNumber || '').replace(/\s+/g, '');
+  const branchName = String(bankDetails?.branchName || '').trim();
+
+  if (!bankName || !accountHolderName || !accountNumber || !branchName) {
+    const error = new Error('Bank name, account holder name, account number, and branch name are required');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  if (!/^[0-9A-Za-z-]{6,30}$/.test(accountNumber)) {
+    const error = new Error('Enter a valid bank account number');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  booking.refundRequestStatus = 'pending';
+  booking.refundRequestedAt = new Date();
+  booking.refundReason = String(reason || '').trim();
+  booking.refundBankDetails = {
+    bankName,
+    accountHolderName,
+    accountNumber,
+    branchName,
+  };
+  booking.refundReviewedAt = null;
+  booking.refundReviewedBy = null;
+  booking.refundReviewNote = '';
+
+  await booking.save();
+  return booking.toObject();
+};
+
+const reviewRefundRequest = async ({ bookingId, adminUserId, decision, note }) => {
+  const normalizedDecision = String(decision || '').trim().toLowerCase();
+  if (!['approve', 'reject'].includes(normalizedDecision)) {
+    const error = new Error('Decision must be either approve or reject');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const booking = await Booking.findById(bookingId);
+  if (!booking) {
+    const error = new Error('Booking not found');
+    error.statusCode = 404;
+    throw error;
+  }
+
+  if (booking.refundRequestStatus !== 'pending') {
+    const error = new Error('Booking does not have a pending refund request');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  booking.refundReviewedAt = new Date();
+  booking.refundReviewedBy = adminUserId;
+  booking.refundReviewNote = String(note || '').trim();
+
+  if (normalizedDecision === 'approve') {
+    booking.refundRequestStatus = 'approved';
+    booking.status = 'cancelled';
+
+    const event = await Event.findById(booking.event);
+    if (event) {
+      event.availableTickets = Number(event.availableTickets || 0) + Number(booking.ticketCount || 1);
+
+      if (booking.ticketTier && Array.isArray(event.ticketTiers) && event.ticketTiers.length > 0) {
+        const tier = event.ticketTiers.find((t) => String(t.name) === String(booking.ticketTier));
+        if (tier) {
+          tier.soldQuantity = Math.max(
+            0,
+            Number(tier.soldQuantity || 0) - Number(booking.ticketCount || 1),
+          );
+        }
+      }
+
+      await event.save();
+    }
+
+    // Best-effort: generate and send refund invoice email to the booking owner.
+    try {
+      const refundUser = await User.findById(booking.user).select('firstName email');
+      if (refundUser?.email && Number(booking.totalPrice || 0) > 0) {
+        const refundInvoice = await sendRefundInvoiceEmail({
+          to: refundUser.email,
+          firstName: refundUser.firstName,
+          bookingId: booking._id,
+          issueDate: new Date(),
+          eventTitle: event?.title || 'Event',
+          refundAmount: booking.totalPrice,
+        });
+
+        booking.refundInvoiceNumber = refundInvoice.invoiceNumber;
+        booking.refundInvoiceIssuedAt = refundInvoice.issuedAt;
+      }
+    } catch (refundInvoiceError) {
+      logger.error(`Refund invoice delivery failed: ${refundInvoiceError.message}`);
+    }
+  } else {
+    booking.refundRequestStatus = 'rejected';
+  }
+
+  await booking.save();
+  return booking.toObject();
+};
+
 module.exports = {
   createBooking,
   getUserBookings,
@@ -437,4 +606,6 @@ module.exports = {
   validateQR,
   transferBooking,
   getUserAttendedEvents,
+  requestRefund,
+  reviewRefundRequest,
 };

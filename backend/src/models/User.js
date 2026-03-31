@@ -1,6 +1,23 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
+const paymentCardSchema = new mongoose.Schema(
+  {
+    bankName: { type: String, required: true, trim: true, maxlength: 80 },
+    cardholderName: { type: String, required: true, trim: true, maxlength: 120 },
+    brand: { type: String, trim: true, default: 'Card', maxlength: 40 },
+    last4: {
+      type: String,
+      required: true,
+      match: /^\d{4}$/,
+    },
+    expiryMonth: { type: Number, required: true, min: 1, max: 12 },
+    expiryYear: { type: Number, required: true, min: 2000, max: 9999 },
+    isDefault: { type: Boolean, default: false },
+  },
+  { _id: true }
+);
+
 const userSchema = new mongoose.Schema(
   {
     firstName: { type: String, required: true, trim: true },
@@ -23,6 +40,10 @@ const userSchema = new mongoose.Schema(
       eventReminders: { type: Boolean, default: true },
       preferredLanguage: { type: String, enum: ['en', 'si', 'ta'], default: 'en' },
       preferredTheme: { type: String, enum: ['light', 'dark', 'system'], default: 'system' },
+    },
+    paymentCards: {
+      type: [paymentCardSchema],
+      default: [],
     },
   },
   { timestamps: true }

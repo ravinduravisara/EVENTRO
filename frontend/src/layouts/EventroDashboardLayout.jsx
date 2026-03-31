@@ -11,6 +11,7 @@ import {
   Calendar,
   CheckSquare,
   Megaphone,
+  RefreshCcw,
   FileBarChart,
   Settings,
   HelpCircle,
@@ -29,6 +30,7 @@ const navItems = [
   { icon: Calendar, label: 'Calendar', path: '/admin/calendar' },
   { icon: CheckSquare, label: 'Tasks', path: '/admin/tasks' },
   { icon: Megaphone, label: 'Marketing', path: '/admin/marketing' },
+  { icon: RefreshCcw, label: 'Refund', path: '/admin/refunds' },
   { icon: FileBarChart, label: 'Reports', path: '/admin/reports' },
 ];
 

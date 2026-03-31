@@ -83,6 +83,34 @@ const transferBooking = async (req, res, next) => {
   }
 };
 
+const requestRefund = async (req, res, next) => {
+  try {
+    const booking = await bookingService.requestRefund({
+      bookingId: req.params.id,
+      userId: req.user.id,
+      reason: req.body?.reason,
+      bankDetails: req.body?.bankDetails,
+    });
+    res.json(booking);
+  } catch (error) {
+    next(error);
+  }
+};
+
+const reviewRefundRequest = async (req, res, next) => {
+  try {
+    const booking = await bookingService.reviewRefundRequest({
+      bookingId: req.params.id,
+      adminUserId: req.user.id,
+      decision: req.body?.decision,
+      note: req.body?.note,
+    });
+    res.json(booking);
+  } catch (error) {
+    next(error);
+  }
+};
+
 const getUserAttendedEvents = async (req, res, next) => {
   try {
     const events = await bookingService.getUserAttendedEvents(req.user.id);
@@ -101,4 +129,6 @@ module.exports = {
   validateQR,
   transferBooking,
   getUserAttendedEvents,
+  requestRefund,
+  reviewRefundRequest,
 };

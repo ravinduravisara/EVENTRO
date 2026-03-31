@@ -5,7 +5,6 @@ import {
   AlertCircle, RefreshCw, ArrowLeft, CalendarDays, FileText,
 } from 'lucide-react';
 import useFetch from '../hooks/useFetch';
-import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useLocation } from 'react-router-dom';
 
@@ -28,9 +27,8 @@ const EventDetails = () => {
 
   const [selectedTier, setSelectedTier] = useState(null);
   const [ticketCount, setTicketCount] = useState(1);
-  const [booking, setBooking] = useState(false);
+  const [redirectingToPayment, setRedirectingToPayment] = useState(false);
   const [bookError, setBookError] = useState('');
-  const [bookSuccess, setBookSuccess] = useState('');
   const [whatsappNumber, setWhatsappNumber] = useState('');
 
   if (loading)
@@ -61,9 +59,22 @@ const EventDetails = () => {
   const deadlinePassed = event.registrationDeadline && new Date(event.registrationDeadline) < new Date();
   const canBook = event.status === 'approved' || event.status === 'live';
 
-  const handleBook = async () => {
+  const handleBook = () => {
     if (!canBook) return;
     if (hasTiers && selectedTier === null) return setBookError('Select a ticket tier');
+
+    const selectedTicketTier = hasTiers ? tiers[selectedTier] : null;
+    const selectedTierAvailability = selectedTicketTier ? tierAvail(selectedTicketTier) : availSeats;
+
+    if (selectedTierAvailability <= 0) {
+      setBookError('Selected ticket tier is sold out');
+      return;
+    }
+
+    if (ticketCount > selectedTierAvailability) {
+      setBookError(`Only ${selectedTierAvailability} ticket${selectedTierAvailability === 1 ? '' : 's'} left for this selection`);
+      return;
+    }
 
     if (!user) {
       setBookError('Please login to book tickets');
@@ -71,29 +82,22 @@ const EventDetails = () => {
       return;
     }
 
-    setBooking(true);
+    setRedirectingToPayment(true);
     setBookError('');
-    setBookSuccess('');
 
-    try {
-      const tier = hasTiers ? tiers[selectedTier] : null;
-      const payload = {
-        event: event._id,
-        ticketCount,
-        // Price is re-calculated server-side; keep this for backward compat.
-        totalPrice: tier ? tier.price * ticketCount : (event.ticketPrice || 0) * ticketCount,
-      };
-      if (tier) payload.tierName = tier.name;
-      if (whatsappNumber.trim()) payload.whatsappNumber = whatsappNumber.trim();
+    const searchParams = new URLSearchParams({
+      ticketCount: String(ticketCount),
+    });
 
-      await api.post('/bookings', payload);
-      setBookSuccess('Booking confirmed! Check your tickets.');
-      refetch();
-    } catch (err) {
-      setBookError(err.response?.data?.message || 'Booking failed');
-    } finally {
-      setBooking(false);
+    if (selectedTier !== null) {
+      searchParams.set('tier', String(selectedTier));
     }
+
+    if (whatsappNumber.trim()) {
+      searchParams.set('whatsapp', whatsappNumber.trim());
+    }
+
+    navigate(`/events/${event._id}/payment?${searchParams.toString()}`);
   };
 
   const tierAvail = (t) => (t.totalQuantity || 0) - (t.soldQuantity || 0);
@@ -292,17 +296,16 @@ const EventDetails = () => {
             )}
 
             {bookError && <p className="text-xs text-red-400">{bookError}</p>}
-            {bookSuccess && <p className="text-xs text-emerald-400">{bookSuccess}</p>}
 
             <button
               onClick={handleBook}
-              disabled={booking || deadlinePassed || !canBook || availSeats === 0}
+              disabled={redirectingToPayment || deadlinePassed || !canBook || availSeats === 0}
               className="w-full py-3 rounded-xl font-medium text-sm transition flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed bg-indigo-500 hover:bg-indigo-600 text-white"
             >
-              {booking ? (
+              {redirectingToPayment ? (
                 <>
                   <span className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  Booking…
+                  Opening checkout…
                 </>
               ) : availSeats === 0 ? 'Sold Out' : deadlinePassed ? 'Registration Closed' : !canBook ? 'Not Available' : (
                 'Book Now'
