@@ -22,6 +22,10 @@ const Register = () => {
   const [touched, setTouched] = useState({});
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [supportForm, setSupportForm] = useState({ email: '', description: '' });
+  const [supportNotice, setSupportNotice] = useState({ type: '', message: '' });
+  const [isSendingSupport, setIsSendingSupport] = useState(false);
+  const [isSupportOpen, setIsSupportOpen] = useState(false);
   const { register } = useAuth();
   const navigate = useNavigate();
 
@@ -185,6 +189,51 @@ const Register = () => {
     }
   };
 
+  const handleSupportSubmit = async (e) => {
+    e.preventDefault();
+
+    const supportEmail = String(supportForm.email || form.email || '').trim();
+    const description = String(supportForm.description || '').trim();
+
+    if (!supportEmail) {
+      setSupportNotice({ type: 'error', message: 'Enter your email address to message the admin.' });
+      return;
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(supportEmail)) {
+      setSupportNotice({ type: 'error', message: 'Enter a valid email address.' });
+      return;
+    }
+
+    if (description.length < 10) {
+      setSupportNotice({ type: 'error', message: 'Describe your issue in at least 10 characters.' });
+      return;
+    }
+
+    setIsSendingSupport(true);
+    setSupportNotice({ type: '', message: '' });
+
+    try {
+      const { data } = await api.post('/support/messages', {
+        email: supportEmail,
+        description,
+      });
+
+      setSupportForm((prev) => ({ ...prev, email: supportEmail, description: '' }));
+      setSupportNotice({
+        type: 'success',
+        message: data?.message || 'Your message has been sent to the admin.',
+      });
+    } catch (err) {
+      setSupportNotice({
+        type: 'error',
+        message: err.response?.data?.message || 'Failed to send your message.',
+      });
+    } finally {
+      setIsSendingSupport(false);
+    }
+  };
+
   const fieldBaseClass =
     'w-full rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-white placeholder:text-white/40 transition focus:border-indigo-300/70 focus:outline-none focus:ring-2 focus:ring-indigo-400/40';
 
@@ -230,6 +279,89 @@ const Register = () => {
                 <div className="text-xl font-bold text-white">Live</div>
                 <div className="mt-1 text-xs uppercase tracking-wider text-white/60">Insights</div>
               </div>
+            </div>
+
+            <div className="mt-8 rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <div>
+                  <p className="text-sm font-semibold uppercase tracking-[0.22em] text-cyan-200/80">Need admin help first?</p>
+                  <p className="mt-2 max-w-xl text-sm leading-relaxed text-white/65">
+                    Guests and banned users can contact the admin before creating an account.
+                  </p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="hidden rounded-2xl border border-rose-300/20 bg-rose-400/10 px-3 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-rose-100 sm:block">
+                    Guests + banned users
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsSupportOpen((prev) => !prev)}
+                    className="inline-flex items-center rounded-2xl bg-white px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-100"
+                  >
+                    {isSupportOpen ? 'Hide admin message form' : 'Contact admin'}
+                  </button>
+                </div>
+              </div>
+
+              {isSupportOpen && (
+                <div className="mt-6 border-t border-white/10 pt-6">
+                  <h2 className="text-2xl font-bold text-white">Send a message before creating your account</h2>
+                  <p className="mt-3 text-sm leading-relaxed text-white/65">
+                    Use this if you are blocked from signing up, appealing a ban, or need help before registration.
+                    The admin will receive your message in the dashboard notification bell and can reply by email.
+                  </p>
+
+                  <form onSubmit={handleSupportSubmit} className="mt-6 space-y-4">
+                    <div>
+                      <label htmlFor="support-email" className="mb-2 block text-sm font-medium text-white/80">
+                        Your email
+                      </label>
+                      <input
+                        id="support-email"
+                        type="email"
+                        value={supportForm.email || form.email}
+                        onChange={(e) => setSupportForm((prev) => ({ ...prev, email: e.target.value }))}
+                        placeholder="name@example.com"
+                        className={fieldBaseClass}
+                      />
+                    </div>
+
+                    <div>
+                      <label htmlFor="support-description" className="mb-2 block text-sm font-medium text-white/80">
+                        Description
+                      </label>
+                      <textarea
+                        id="support-description"
+                        rows={4}
+                        value={supportForm.description}
+                        onChange={(e) => setSupportForm((prev) => ({ ...prev, description: e.target.value }))}
+                        placeholder="Tell the admin what you need help with."
+                        className={`${fieldBaseClass} resize-none`}
+                      />
+                    </div>
+
+                    {supportNotice.message && (
+                      <div
+                        className={`rounded-2xl border px-4 py-3 text-sm ${
+                          supportNotice.type === 'success'
+                            ? 'border-emerald-400/30 bg-emerald-500/10 text-emerald-100'
+                            : 'border-rose-400/30 bg-rose-500/10 text-rose-100'
+                        }`}
+                      >
+                        {supportNotice.message}
+                      </div>
+                    )}
+
+                    <button
+                      type="submit"
+                      disabled={isSendingSupport}
+                      className="inline-flex items-center rounded-2xl bg-white px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-100 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {isSendingSupport ? 'Sending message...' : 'Message admin'}
+                    </button>
+                  </form>
+                </div>
+              )}
             </div>
           </div>
 
