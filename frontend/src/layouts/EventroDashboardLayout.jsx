@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import logoImg from '../assets/icons/logo.png';
+import AdminSupportNotifications from '../components/AdminSupportNotifications';
 import {
   LayoutDashboard,
   CalendarDays,
@@ -14,7 +15,6 @@ import {
   Settings,
   HelpCircle,
   Search,
-  Bell,
   ChevronLeft,
   ChevronRight,
   LogOut,
@@ -185,11 +185,7 @@ const EventroDashboardLayout = () => {
               />
             </div>
 
-            {/* Notifications */}
-            <button className="relative p-2 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition">
-              <Bell size={20} />
-              <span className="absolute top-1 right-1 w-2 h-2 bg-emerald-500 rounded-full"></span>
-            </button>
+            <AdminSupportNotifications />
 
             {/* User */}
             <div className="flex items-center gap-3">

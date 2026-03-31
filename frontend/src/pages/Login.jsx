@@ -103,6 +103,18 @@ const Login = () => {
                       </div>
                       <div>
                         <p className={`text-sm ${isUnverifiedEmail ? 'text-amber-100' : 'text-rose-100'}`}>{error}</p>
+                        {!isUnverifiedEmail && error.includes('suspended') && (
+                          <p className="mt-2 text-sm text-rose-200/85">
+                            Go to{' '}
+                            <Link
+                              to="/register"
+                              className="font-semibold underline transition hover:text-rose-100"
+                            >
+                              Create an account
+                            </Link>
+                            {' '}to send a message to the admin with your email and issue details.
+                          </p>
+                        )}
                         {isUnverifiedEmail && (
                           <p className="mt-2 text-sm text-amber-200/85">
                             Please verify your account with OTP, or{' '}
