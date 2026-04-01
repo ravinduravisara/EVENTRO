@@ -68,6 +68,45 @@ Note: variable names can vary depending on the implementation in `backend/src/co
 
 This repository uses multiple long‑lived branches (e.g. `main`, feature branches). Keep them updated by merging `main` into feature branches regularly.
 
+## Vercel Deployment
+
+Deploy as two separate Vercel projects.
+
+### 1) Backend project
+
+1. Import the repository into Vercel.
+2. Set Root Directory to `backend`.
+3. Keep framework preset as `Other`.
+4. Add backend environment variables from `backend/.env.example`.
+5. Deploy.
+
+Verify backend:
+
+- `https://<your-backend>.vercel.app/`
+- `https://<your-backend>.vercel.app/api`
+- `https://<your-backend>.vercel.app/api/events`
+
+### 2) Frontend project
+
+1. Import the same repository again as another Vercel project.
+2. Set Root Directory to `frontend`.
+3. Framework preset: `Vite`.
+4. Add environment variable:
+	- `VITE_BACKEND_URL=https://<your-backend>.vercel.app`
+5. Deploy.
+
+### 3) Redeploy order
+
+1. Deploy backend first.
+2. Set `VITE_BACKEND_URL` in frontend project.
+3. Deploy frontend.
+
+### 4) Troubleshooting
+
+- If frontend routes like `/events` show 404, confirm frontend Root Directory is `frontend` and `frontend/vercel.json` is present.
+- If API calls show 404 in browser console, verify frontend `VITE_BACKEND_URL` points to backend Vercel URL.
+- If backend functions fail, inspect Vercel Function Logs for stack traces and missing environment variables.
+
 ## License
 
 Add license information here if/when applicable.
