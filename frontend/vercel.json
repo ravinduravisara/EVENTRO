@@ -9,7 +9,7 @@
       "destination": "https://eventro-toyv.vercel.app/api/$1"
     },
     {
-      "source": "/(.*)",
+      "source": "/(.+)",
       "destination": "/index.html"
     }
   ]
