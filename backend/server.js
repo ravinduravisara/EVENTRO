@@ -5,26 +5,8 @@ const { runEventReminderJob } = require('./src/scripts/eventReminderJob');
 
 const PORT = process.env.PORT || 5000;
 
-// Graceful shutdown handler for Vercel
-const gracefulShutdown = (signal) => {
-  logger.info(`${signal} received, shutting down gracefully`);
-  if (server) {
-    server.close(() => {
-      logger.info('Server closed');
-      process.exit(0);
-    });
-    // Force close after 30 seconds
-    setTimeout(() => {
-      logger.error('Forcing shutdown');
-      process.exit(1);
-    }, 30000);
-  }
-};
-
-let server;
-
 connectDB().then(() => {
-  server = app.listen(PORT, () => {
+  const server = app.listen(PORT, () => {
     logger.info('Server running on port ' + PORT);
   });
 
@@ -52,10 +34,4 @@ connectDB().then(() => {
       throw err;
     }
   });
-
-  // Graceful shutdown handlers
-  process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
-  process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 });
-
-module.exports = app; // Export for Vercel
