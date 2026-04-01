@@ -2,10 +2,15 @@ import axios from 'axios';
 
 // Determine API base URL based on environment
 const getBaseURL = () => {
-  // Use VITE_BACKEND_URL env var if set (for deployed environments)
-  if (import.meta.env.VITE_BACKEND_URL) {
-    const raw = String(import.meta.env.VITE_BACKEND_URL).trim().replace(/\/+$/, '');
-    return raw.endsWith('/api') ? raw : `${raw}/api`;
+  // Accept both env var names to avoid deployment mismatches.
+  const envBase = import.meta.env.VITE_BACKEND_URL || import.meta.env.VITE_API_URL;
+
+  if (envBase) {
+    const raw = String(envBase).trim().replace(/\/+$/, '');
+    if (/\/api$/i.test(raw) || /\/api\//i.test(raw)) {
+      return raw;
+    }
+    return `${raw}/api`;
   }
   
   // Use relative path for local development (Vite proxy handles this)
