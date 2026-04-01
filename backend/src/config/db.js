@@ -90,8 +90,10 @@ const connectDB = async () => {
   // Default behavior:
   // - dev/test: retry indefinitely (prevents nodemon crash loops on flaky networks)
   // - production: fail fast unless explicitly enabled
+  // On Vercel, always enable retries (serverless environment)
+  const isVercel = !!(process.env.VERCEL || process.env.VERCEL_ENV);
   const retryEnabled =
-    String(process.env.MONGO_CONNECT_RETRY || (process.env.NODE_ENV !== 'production')).toLowerCase() === 'true';
+    String(process.env.MONGO_CONNECT_RETRY || (process.env.NODE_ENV !== 'production') || isVercel).toLowerCase() === 'true';
   const maxRetries = Number(process.env.MONGO_CONNECT_MAX_RETRIES || 0); // 0 = infinite
   const baseDelayMs = Number(process.env.MONGO_CONNECT_RETRY_DELAY_MS || 1000);
   const maxDelayMs = Number(process.env.MONGO_CONNECT_RETRY_MAX_DELAY_MS || 30000);
@@ -113,12 +115,19 @@ const connectDB = async () => {
         logger.error(`Database connection error: ${error.message}${hintText}`);
 
         if (!retryEnabled) {
-          process.exit(1);
+          // On Vercel serverless, don't exit - let the function handle it
+          if (!isVercel) {
+            process.exit(1);
+          }
+          throw error;
         }
 
         if (maxRetries > 0 && attempt >= maxRetries) {
           logger.error(`Database connection error: exceeded max retries (${maxRetries}). Exiting.`);
-          process.exit(1);
+          if (!isVercel) {
+            process.exit(1);
+          }
+          throw error;
         }
 
         // Exponential backoff with a sane cap.
