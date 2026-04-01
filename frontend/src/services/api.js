@@ -1,8 +1,26 @@
 import axios from 'axios';
 
+const normalizeBaseURL = (value) => {
+  const raw = String(value).trim().replace(/\/+$/, '');
+  return /\/api$/i.test(raw) ? raw : `${raw}/api`;
+};
+
+const getBaseURL = () => {
+  const envBase = import.meta.env.VITE_BACKEND_URL || import.meta.env.VITE_API_URL;
+
+  if (envBase) {
+    return normalizeBaseURL(envBase);
+  }
+
+  if (import.meta.env.PROD) {
+    return 'https://eventro-toyv.vercel.app/api';
+  }
+
+  return '/api';
+};
+
 const api = axios.create({
-  // Always use same-origin /api; local dev uses Vite proxy and Vercel uses frontend rewrites.
-  baseURL: '/api',
+  baseURL: getBaseURL(),
   headers: { 'Content-Type': 'application/json' },
 });
 
