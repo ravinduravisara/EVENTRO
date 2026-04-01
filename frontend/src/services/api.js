@@ -6,14 +6,14 @@ const normalizeBaseURL = (value) => {
 };
 
 const getBaseURL = () => {
-  if (import.meta.env.PROD) {
-    return 'https://eventro-toyv.vercel.app/api';
-  }
-
   const envBase = import.meta.env.VITE_BACKEND_URL || import.meta.env.VITE_API_URL;
 
   if (envBase) {
     return normalizeBaseURL(envBase);
+  }
+
+  if (import.meta.env.PROD) {
+    return 'https://eventro-toyv.vercel.app/api';
   }
 
   return '/api';
