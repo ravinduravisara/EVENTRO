@@ -70,7 +70,30 @@ This repository uses multiple long‑lived branches (e.g. `main`, feature branch
 
 ## Vercel Deployment
 
-Deploy as two separate Vercel projects.
+Two reliable options:
+
+1) **Recommended (simplest): Single Vercel project** (deploy frontend + backend together)
+2) Two separate Vercel projects (deploy backend and frontend independently)
+
+### Option A (Recommended): Single Vercel project
+
+This repo includes a root [vercel.json](vercel.json) that builds:
+
+- Backend serverless function at `/api/*` from `backend/api/index.js`
+- Frontend static site (Vite build output)
+
+Steps:
+
+1. Import the repository into Vercel.
+2. Root Directory: **leave empty** (use repo root).
+3. Add backend environment variables (same ones you would add for backend-only) from `backend/.env.example`.
+4. Deploy.
+
+Verify:
+
+- `https://<your-app>.vercel.app/` (frontend)
+- `https://<your-app>.vercel.app/api` (backend health)
+- `https://<your-app>.vercel.app/api/events` (backend data)
 
 ### 1) Backend project
 
