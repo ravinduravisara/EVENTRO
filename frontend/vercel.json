@@ -5,6 +5,10 @@
   "ignoreCommand": "git diff --quiet HEAD~1 HEAD -- . ':!frontend' ':!package.json' ':!package-lock.json' || [ $? -eq 1 ]",
   "rewrites": [
     {
+      "source": "/api/(.*)",
+      "destination": "https://eventro-toyv.vercel.app/api/$1"
+    },
+    {
       "source": "/(.+)",
       "destination": "/index.html"
     }
