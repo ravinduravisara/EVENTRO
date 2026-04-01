@@ -1,8 +1,24 @@
 import axios from 'axios';
 
+// Determine API base URL based on environment
+const getBaseURL = () => {
+  // Accept both env var names to avoid deployment mismatches.
+  const envBase = import.meta.env.VITE_BACKEND_URL || import.meta.env.VITE_API_URL;
+
+  if (envBase) {
+    const raw = String(envBase).trim().replace(/\/+$/, '');
+    if (/\/api$/i.test(raw) || /\/api\//i.test(raw)) {
+      return raw;
+    }
+    return `${raw}/api`;
+  }
+  
+  // Use relative path for local development (Vite proxy handles this)
+  return '/api';
+};
+
 const api = axios.create({
-  // Always use same-origin /api; local dev uses Vite proxy and Vercel uses frontend rewrites.
-  baseURL: '/api',
+  baseURL: getBaseURL(),
   headers: { 'Content-Type': 'application/json' },
 });
 
