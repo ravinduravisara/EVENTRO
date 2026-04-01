@@ -1,8 +1,22 @@
 import axios from 'axios';
 
+const normalizeBaseURL = (value) => {
+  const raw = String(value).trim().replace(/\/+$/, '');
+  return /\/api$/i.test(raw) ? raw : `${raw}/api`;
+};
+
+const getBaseURL = () => {
+  const configured = import.meta.env.VITE_BACKEND_URL || import.meta.env.VITE_API_URL;
+  if (configured) {
+    return normalizeBaseURL(configured);
+  }
+
+  // Local development uses Vite proxy.
+  return '/api';
+};
+
 const api = axios.create({
-  // Keep API requests same-origin. Vite proxy handles local dev and Vercel rewrites handle production.
-  baseURL: '/api',
+  baseURL: getBaseURL(),
   headers: { 'Content-Type': 'application/json' },
 });
 
