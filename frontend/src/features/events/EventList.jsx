@@ -47,10 +47,9 @@ const EventCard = ({ event, currentUserId, onDelete }) => {
   const total = getTotalSeats(event);
 
   const imageVersion = event.updatedAt ? new Date(event.updatedAt).getTime() : null;
-  const imagePath = imageVersion
-    ? `/events/${event._id}/image?v=${imageVersion}`
-    : `/events/${event._id}/image`;
-  const imageSrc = api.getUri({ url: imagePath });
+  const imageSrc = imageVersion
+    ? `/api/events/${event._id}/image?v=${imageVersion}`
+    : `/api/events/${event._id}/image`;
 
   const isOwner = currentUserId && (
     event.organizer === currentUserId ||
