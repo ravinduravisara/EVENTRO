@@ -4,8 +4,7 @@ import axios from 'axios';
 const getBaseURL = () => {
   // Use VITE_BACKEND_URL env var if set (for deployed environments)
   if (import.meta.env.VITE_BACKEND_URL) {
-    const raw = String(import.meta.env.VITE_BACKEND_URL).trim().replace(/\/+$/, '');
-    return raw.endsWith('/api') ? raw : `${raw}/api`;
+    return `${import.meta.env.VITE_BACKEND_URL}/api`;
   }
   
   // Use relative path for local development (Vite proxy handles this)
