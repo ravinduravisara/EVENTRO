@@ -199,22 +199,23 @@ const SubmitFeedback = () => {
               <label className="mb-2 block text-sm font-medium text-white/80">
                 Comment
               </label>
-<<<<<<< HEAD
-            <button
-              disabled={submitting || loadingEvents || options.length === 0}
-              className="inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-violet-500 to-cyan-400 px-4 py-2 text-sm font-semibold text-slate-950 shadow-[0_18px_40px_-24px_rgba(34,211,238,0.55)] transition hover:from-violet-400 hover:to-cyan-300 focus:outline-none focus:ring-2 focus:ring-indigo-400/40 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {submitting ? "Submitting..." : "Submit"}
-            </button>
-=======
+              <textarea
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+                rows={4}
+                className={fieldBaseClass}
+                placeholder="Tell us what worked well and what could improve"
+              />
+            </div>
+
             <div className="pt-2 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
+              <button
                 disabled={submitting || loadingEvents || options.length === 0}
                 className="inline-flex w-full items-center justify-center rounded-xl bg-gradient-to-r from-violet-500 to-cyan-400 px-6 py-3 text-sm font-semibold text-slate-950 shadow-[0_18px_40px_-24px_rgba(34,211,238,0.55)] transition hover:from-violet-400 hover:to-cyan-300 focus:outline-none focus:ring-2 focus:ring-indigo-400/40 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
               >
                 {submitting ? "Submitting..." : "Submit"}
               </button>
             </div>
->>>>>>> feedback-analytics-sponsor
           </form>
 
           {options.length === 0 && (
