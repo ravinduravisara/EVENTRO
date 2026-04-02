@@ -1,46 +1,44 @@
-import { useEffect, useMemo, useState } from "react";
-import { useNavigate, useLocation, Outlet } from "react-router-dom";
-import logoImg from "../assets/icons/logo.png";
+import { useEffect, useMemo, useState } from 'react';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
+import logoImg from '../assets/icons/logo.png';
+import AdminSupportNotifications from '../components/AdminSupportNotifications';
 import {
-  LayoutDashboard,
-  CalendarDays,
-  Users,
-  Ticket,
-  QrCode,
   Calendar,
+  CalendarDays,
   CheckSquare,
-  Megaphone,
-  FileBarChart,
-  MessageSquare,
-  HandCoins,
-  Settings,
-  HelpCircle,
-  Search,
-  Bell,
   ChevronLeft,
   ChevronRight,
-  Menu,
+  FileBarChart,
+  HelpCircle,
+  LayoutDashboard,
   LogOut,
+  Megaphone,
+  Menu,
+  QrCode,
+  RefreshCcw,
+  Search,
+  Settings,
+  Ticket,
+  Users,
   X,
-} from "lucide-react";
+} from 'lucide-react';
 
 const navItems = [
-  { icon: LayoutDashboard, label: "Dashboard", path: "/admin" },
-  { icon: CalendarDays, label: "Events", path: "/admin/events" },
-  { icon: Users, label: "Attendees", path: "/admin/users" },
-  { icon: Ticket, label: "Tickets", path: "/admin/tickets" },
-  { icon: QrCode, label: "Check-in", path: "/admin/check-in" },
-  { icon: Calendar, label: "Calendar", path: "/admin/calendar" },
-  { icon: CheckSquare, label: "Tasks", path: "/admin/tasks" },
-  { icon: Megaphone, label: "Marketing", path: "/admin/marketing" },
-  { icon: FileBarChart, label: "Reports", path: "/admin/reports" },
-  { icon: MessageSquare, label: "Feedback", path: "/admin/feedback" },
-  { icon: HandCoins, label: "Sponsorship", path: "/admin/sponsorship" },
+  { icon: LayoutDashboard, label: 'Dashboard', path: '/admin' },
+  { icon: CalendarDays, label: 'Events', path: '/admin/events' },
+  { icon: Users, label: 'Attendees', path: '/admin/users' },
+  { icon: Ticket, label: 'Tickets', path: '/admin/tickets' },
+  { icon: QrCode, label: 'Check-in', path: '/admin/check-in' },
+  { icon: Calendar, label: 'Calendar', path: '/admin/calendar' },
+  { icon: CheckSquare, label: 'Tasks', path: '/admin/tasks' },
+  { icon: Megaphone, label: 'Marketing', path: '/admin/marketing' },
+  { icon: RefreshCcw, label: 'Refund', path: '/admin/refunds' },
+  { icon: FileBarChart, label: 'Reports', path: '/admin/reports' },
 ];
 
 const bottomItems = [
-  { icon: Settings, label: "Settings", path: "/admin/settings" },
-  { icon: HelpCircle, label: "Help", path: "/admin/help" },
+  { icon: Settings, label: 'Settings', path: '/admin/settings' },
+  { icon: HelpCircle, label: 'Help', path: '/admin/help' },
 ];
 
 const EventroDashboardLayout = () => {
@@ -49,26 +47,20 @@ const EventroDashboardLayout = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const storageKey = "eventro_admin_settings";
+  const storageKey = 'eventro_admin_settings';
 
   const loadAdminProfile = () => {
     try {
       const raw = localStorage.getItem(storageKey);
       if (!raw) {
-        return { name: "Alex Rivera", role: "Admin" };
+        return { name: 'Alex Rivera', role: 'Admin' };
       }
       const parsed = JSON.parse(raw);
-      const name =
-        typeof parsed?.profile?.name === "string" && parsed.profile.name.trim()
-          ? parsed.profile.name.trim()
-          : "Alex Rivera";
-      const role =
-        typeof parsed?.profile?.role === "string" && parsed.profile.role.trim()
-          ? parsed.profile.role.trim()
-          : "Admin";
+      const name = typeof parsed?.profile?.name === 'string' && parsed.profile.name.trim() ? parsed.profile.name.trim() : 'Alex Rivera';
+      const role = typeof parsed?.profile?.role === 'string' && parsed.profile.role.trim() ? parsed.profile.role.trim() : 'Admin';
       return { name, role };
     } catch {
-      return { name: "Alex Rivera", role: "Admin" };
+      return { name: 'Alex Rivera', role: 'Admin' };
     }
   };
 
@@ -77,39 +69,30 @@ const EventroDashboardLayout = () => {
   useEffect(() => {
     const updateFromStorage = () => setAdminProfile(loadAdminProfile());
 
-    window.addEventListener(
-      "eventro_admin_settings_updated",
-      updateFromStorage,
-    );
-    window.addEventListener("storage", updateFromStorage);
+    window.addEventListener('eventro_admin_settings_updated', updateFromStorage);
+    window.addEventListener('storage', updateFromStorage);
     return () => {
-      window.removeEventListener(
-        "eventro_admin_settings_updated",
-        updateFromStorage,
-      );
-      window.removeEventListener("storage", updateFromStorage);
+      window.removeEventListener('eventro_admin_settings_updated', updateFromStorage);
+      window.removeEventListener('storage', updateFromStorage);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const avatarSeed = useMemo(
-    () => encodeURIComponent(adminProfile.name || "Admin"),
-    [adminProfile.name],
-  );
+  const avatarSeed = useMemo(() => encodeURIComponent(adminProfile.name || 'Admin'), [adminProfile.name]);
 
   const isActivePath = (currentPath, itemPath) => {
-    if (itemPath === "/admin") {
+    if (itemPath === '/admin') {
       return currentPath === itemPath;
     }
     return currentPath === itemPath || currentPath.startsWith(`${itemPath}/`);
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("eventro_admin_authenticated");
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
+    localStorage.removeItem('eventro_admin_authenticated');
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
     setMobileSidebarOpen(false);
-    navigate("/eventro-admin", { replace: true });
+    navigate('/eventro-admin', { replace: true });
   };
 
   const handleNavigate = (path) => {
@@ -139,17 +122,13 @@ const EventroDashboardLayout = () => {
       {/* Sidebar */}
       <aside
         className={`fixed inset-y-0 left-0 z-40 w-64 flex flex-col bg-white dark:bg-[#0F1629] border-r border-slate-200 dark:border-slate-700/50 transition-all duration-300 md:static md:translate-x-0 shrink-0 ${
-          mobileSidebarOpen ? "translate-x-0" : "-translate-x-full"
-        } ${collapsed ? "md:w-20" : "md:w-64"}`}
+          mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        } ${collapsed ? 'md:w-20' : 'md:w-64'}`}
       >
         {/* Logo */}
         <div className="flex items-center justify-between gap-3 px-5 py-5 border-b border-slate-200 dark:border-slate-700/50">
           <div className="flex items-center gap-3">
-          <img
-            src={logoImg}
-            alt="Eventro"
-            className="h-9 w-9 rounded-xl shrink-0"
-          />
+            <img src={logoImg} alt="Eventro" className="h-9 w-9 rounded-xl shrink-0" />
           {!collapsed && (
             <span className="text-xl font-bold tracking-tight">Eventro</span>
           )}
@@ -176,8 +155,8 @@ const EventroDashboardLayout = () => {
                 onClick={() => handleNavigate(item.path)}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
                   isActive
-                    ? "bg-emerald-500/15 text-emerald-400"
-                    : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-700/50"
+                    ? 'bg-emerald-500/15 text-emerald-400'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-700/50'
                 }`}
               >
                 <Icon size={20} className="shrink-0" />
@@ -198,8 +177,8 @@ const EventroDashboardLayout = () => {
                 onClick={() => handleNavigate(item.path)}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
                   isActive
-                    ? "bg-emerald-500/15 text-emerald-400"
-                    : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-700/50"
+                    ? 'bg-emerald-500/15 text-emerald-400'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-700/50'
                 }`}
               >
                 <Icon size={20} className="shrink-0" />
@@ -256,11 +235,7 @@ const EventroDashboardLayout = () => {
                 />
               </div>
 
-              {/* Notifications */}
-              <button className="relative p-2 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition">
-                <Bell size={20} />
-                <span className="absolute top-1 right-1 w-2 h-2 bg-emerald-500 rounded-full"></span>
-              </button>
+              <AdminSupportNotifications />
 
               {/* User */}
               <div className="flex items-center gap-3">
@@ -270,12 +245,8 @@ const EventroDashboardLayout = () => {
                   className="w-9 h-9 rounded-full ring-2 ring-slate-300 dark:ring-slate-600"
                 />
                 <div className="text-right hidden md:block">
-                  <p className="text-sm font-semibold leading-tight">
-                    {adminProfile.name}
-                  </p>
-                  <p className="text-xs text-slate-600 dark:text-slate-400">
-                    {adminProfile.role}
-                  </p>
+                  <p className="text-sm font-semibold leading-tight">{adminProfile.name}</p>
+                  <p className="text-xs text-slate-600 dark:text-slate-400">{adminProfile.role}</p>
                 </div>
               </div>
             </div>

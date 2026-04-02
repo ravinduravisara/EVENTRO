@@ -25,6 +25,7 @@ const Navbar = () => {
 
     if (user) {
       links.push({ to: "/bookings", label: "My Bookings" });
+      links.push({ to: "/transactions", label: "Transactions" });
       links.push({ to: "/profile", label: "Profile" });
       if (user.role === "admin") links.push({ to: "/admin", label: "Admin" });
     } else {
@@ -128,6 +129,14 @@ const Navbar = () => {
                           onClick={() => setUserMenuOpen(false)}
                         >
                           My Bookings
+                        </Link>
+
+                        <Link
+                          to="/transactions"
+                          className="block rounded-xl px-3 py-2 text-sm text-white/70 hover:bg-white/10 hover:text-white"
+                          onClick={() => setUserMenuOpen(false)}
+                        >
+                          Transactions
                         </Link>
 
                         {user.role === "admin" && (
