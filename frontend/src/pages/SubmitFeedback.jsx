@@ -6,10 +6,13 @@ const SubmitFeedback = () => {
   const [eventId, setEventId] = useState("");
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState("");
-  const [loading, setLoading] = useState(true);
+  const [loadingEvents, setLoadingEvents] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+
+  const cacheKey = "eventro_attended_events_cache_v1";
+  const cacheMaxAgeMs = 2 * 60 * 1000;
 
   const options = useMemo(() => {
     const arr = Array.isArray(events) ? events : [];
@@ -19,17 +22,56 @@ const SubmitFeedback = () => {
   useEffect(() => {
     const fetchEvents = async () => {
       try {
-        setLoading(true);
+        setLoadingEvents(true);
+
+        try {
+          const raw = sessionStorage.getItem(cacheKey);
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            const cachedAt = Number(parsed?.cachedAt) || 0;
+            const cachedEvents = Array.isArray(parsed?.events)
+              ? parsed.events
+              : [];
+
+            if (cachedEvents.length && Date.now() - cachedAt < cacheMaxAgeMs) {
+              setEvents(cachedEvents);
+              setEventId((current) => current || cachedEvents?.[0]?._id || "");
+              setLoadingEvents(false);
+            }
+          }
+        } catch {
+          // ignore cache errors
+        }
+
         const res = await api.get("/bookings/my-attended-events");
-        const list = Array.isArray(res.data) ? res.data : [];
+        const list = Array.isArray(res.data)
+          ? res.data
+          : Array.isArray(res.data?.events)
+            ? res.data.events
+            : [];
         setEvents(list);
-        if (list?.[0]?._id) setEventId(list[0]._id);
+
+        setEventId((current) => {
+          if (current && list.some((e) => e?._id === current)) {
+            return current;
+          }
+          return list?.[0]?._id || "";
+        });
+
+        try {
+          sessionStorage.setItem(
+            cacheKey,
+            JSON.stringify({ cachedAt: Date.now(), events: list }),
+          );
+        } catch {
+          // ignore storage errors
+        }
       } catch (e) {
         setError(
           e?.response?.data?.message || e?.message || "Failed to load events",
         );
       } finally {
-        setLoading(false);
+        setLoadingEvents(false);
       }
     };
     fetchEvents();
@@ -65,19 +107,6 @@ const SubmitFeedback = () => {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="relative isolate overflow-hidden">
-        <div className="pointer-events-none absolute inset-0 -z-10 bg-slate-950" />
-        <div className="mx-auto max-w-3xl px-4 py-16">
-          <div className="flex items-center justify-center py-16">
-            <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-indigo-400" />
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="relative isolate overflow-hidden">
       <div className="pointer-events-none absolute inset-0 -z-10 bg-slate-950" />
@@ -112,14 +141,29 @@ const SubmitFeedback = () => {
             className="space-y-4 rounded-3xl border border-white/10 bg-white/5 p-6 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.85)] backdrop-blur-xl"
           >
             <div>
-              <label className="block text-sm font-medium text-white/80 mb-1">
-                Event
-              </label>
+              <div className="mb-1 flex items-center justify-between gap-3">
+                <label className="block text-sm font-medium text-white/80">
+                  Event
+                </label>
+                {loadingEvents && (
+                  <span className="inline-flex items-center gap-2 text-xs text-white/60">
+                    <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/15 border-t-indigo-300" />
+                    Loading…
+                  </span>
+                )}
+              </div>
               <select
                 value={eventId}
                 onChange={(e) => setEventId(e.target.value)}
-                className="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-3 py-2 text-sm text-white/90 focus:outline-none focus:ring-2 focus:ring-indigo-400/40"
+                disabled={loadingEvents || options.length === 0}
+                className="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-3 py-2 text-sm text-white/90 focus:outline-none focus:ring-2 focus:ring-indigo-400/40 disabled:cursor-not-allowed disabled:opacity-60"
               >
+                {loadingEvents && (
+                  <option value="">Loading attended events…</option>
+                )}
+                {!loadingEvents && options.length === 0 && (
+                  <option value="">No attended events found</option>
+                )}
                 {options.map((o) => (
                   <option key={o.id} value={o.id}>
                     {o.title}
@@ -159,8 +203,8 @@ const SubmitFeedback = () => {
             </div>
 
             <button
-              disabled={submitting}
-              className="inline-flex items-center justify-center rounded-2xl bg-indigo-500/25 px-4 py-2 text-sm font-semibold text-indigo-100 ring-1 ring-indigo-300/20 hover:bg-indigo-500/35 disabled:opacity-60"
+              disabled={submitting || loadingEvents || options.length === 0}
+              className="inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-violet-500 to-cyan-400 px-4 py-2 text-sm font-semibold text-slate-950 shadow-[0_18px_40px_-24px_rgba(34,211,238,0.55)] transition hover:from-violet-400 hover:to-cyan-300 focus:outline-none focus:ring-2 focus:ring-indigo-400/40 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {submitting ? "Submitting..." : "Submit"}
             </button>
