@@ -15,8 +15,10 @@ const getBaseURL = () => {
   return '/api';
 };
 
+export const API_BASE_URL = getBaseURL();
+
 const api = axios.create({
-  baseURL: getBaseURL(),
+  baseURL: API_BASE_URL,
   headers: { 'Content-Type': 'application/json' },
 });
 

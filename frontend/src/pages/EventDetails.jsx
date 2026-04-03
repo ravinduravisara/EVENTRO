@@ -7,6 +7,7 @@ import {
 import useFetch from '../hooks/useFetch';
 import { useAuth } from '../context/AuthContext';
 import { useLocation } from 'react-router-dom';
+import { API_BASE_URL } from '../services/api';
 
 const STATUS_BADGE = {
   draft:     'bg-slate-500/15 text-slate-400',
@@ -30,6 +31,7 @@ const EventDetails = () => {
   const [redirectingToPayment, setRedirectingToPayment] = useState(false);
   const [bookError, setBookError] = useState('');
   const [whatsappNumber, setWhatsappNumber] = useState('');
+  const [imgFailed, setImgFailed] = useState(false);
 
   if (loading)
     return (
@@ -102,6 +104,11 @@ const EventDetails = () => {
 
   const tierAvail = (t) => (t.totalQuantity || 0) - (t.soldQuantity || 0);
 
+  const imageVersion = event.updatedAt ? new Date(event.updatedAt).getTime() : null;
+  const eventImageSrc = imageVersion
+    ? `${API_BASE_URL}/events/${event._id}/image?v=${imageVersion}`
+    : `${API_BASE_URL}/events/${event._id}/image`;
+
   return (
     <div className="mx-auto max-w-4xl">
       {/* Back */}
@@ -111,8 +118,15 @@ const EventDetails = () => {
 
       {/* Hero image */}
       <div className="rounded-2xl overflow-hidden bg-slate-800 mb-8">
-        {event.image ? (
-          <img src={event.image} alt={event.title} className="w-full h-64 sm:h-80 object-cover" />
+        {event.image && !imgFailed ? (
+          <img
+            src={eventImageSrc}
+            alt={event.title}
+            loading="lazy"
+            decoding="async"
+            onError={() => setImgFailed(true)}
+            className="w-full h-64 sm:h-80 object-cover"
+          />
         ) : (
           <div className="w-full h-64 sm:h-80 flex items-center justify-center text-slate-600">
             <CalendarDays className="w-16 h-16" />

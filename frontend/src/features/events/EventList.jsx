@@ -7,6 +7,7 @@ import {
 import useFetch from '../../hooks/useFetch';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
+import { API_BASE_URL } from '../../services/api';
 
 const STATUS_BADGE = {
   draft:    'bg-slate-500/15 text-slate-400',
@@ -48,8 +49,8 @@ const EventCard = ({ event, currentUserId, onDelete }) => {
 
   const imageVersion = event.updatedAt ? new Date(event.updatedAt).getTime() : null;
   const imageSrc = imageVersion
-    ? `/api/events/${event._id}/image?v=${imageVersion}`
-    : `/api/events/${event._id}/image`;
+    ? `${API_BASE_URL}/events/${event._id}/image?v=${imageVersion}`
+    : `${API_BASE_URL}/events/${event._id}/image`;
 
   const isOwner = currentUserId && (
     event.organizer === currentUserId ||

@@ -162,7 +162,7 @@ const BookingHistory = () => {
               key={booking._id}
               className="group rounded-xl border border-white/[0.06] bg-[#141B2D] p-5 transition-all hover:border-indigo-500/30 hover:bg-[#1a2235]"
             >
-              <div className="flex items-center justify-between gap-4">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 {/* Left: event info */}
                 <div className="min-w-0 flex-1 space-y-2">
                   <h3 className="truncate text-lg font-semibold text-white">
@@ -198,13 +198,13 @@ const BookingHistory = () => {
                 </div>
 
                 {/* Right: action */}
-                <div className="flex shrink-0 items-center gap-2">
+                <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
                   {booking.status === 'confirmed' && (
                     <button
                       type="button"
                       onClick={() => openTransfer(booking._id)}
                       disabled={transferLoadingId === booking._id}
-                      className="rounded-lg bg-white/5 px-4 py-2 text-sm font-medium text-slate-200 transition-colors hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
+                      className="w-full rounded-lg bg-white/5 px-4 py-2 text-sm font-medium text-slate-200 transition-colors hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
                     >
                       Transfer
                     </button>
@@ -215,7 +215,7 @@ const BookingHistory = () => {
                       type="button"
                       onClick={() => openRefund(booking._id)}
                       disabled={refundLoadingId === booking._id}
-                      className="rounded-lg bg-red-500/10 px-4 py-2 text-sm font-medium text-red-300 transition-colors hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-60"
+                      className="w-full rounded-lg bg-red-500/10 px-4 py-2 text-sm font-medium text-red-300 transition-colors hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
                     >
                       Request Refund
                     </button>
@@ -224,7 +224,7 @@ const BookingHistory = () => {
                   <Link
                     to={`/bookings/${booking._id}/ticket`}
                     state={{ booking }}
-                    className="flex items-center gap-1 rounded-lg bg-indigo-500/15 px-4 py-2 text-sm font-medium text-indigo-400 transition-colors hover:bg-indigo-500/25"
+                    className="flex w-full items-center justify-center gap-1 rounded-lg bg-indigo-500/15 px-4 py-2 text-sm font-medium text-indigo-400 transition-colors hover:bg-indigo-500/25 sm:w-auto"
                   >
                     View Ticket
                     <ChevronRight className="h-4 w-4" />
@@ -246,12 +246,12 @@ const BookingHistory = () => {
                       <p className="mt-1 text-xs text-slate-400">Recipient must already have an Eventro account.</p>
                     </div>
 
-                    <div className="flex gap-2">
+                    <div className="flex flex-col gap-2 sm:flex-row">
                       <button
                         type="button"
                         onClick={() => confirmTransfer(booking._id)}
                         disabled={transferLoadingId === booking._id}
-                        className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-60"
+                        className="w-full rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
                       >
                         {transferLoadingId === booking._id ? 'Transferring…' : 'Confirm'}
                       </button>
@@ -259,7 +259,7 @@ const BookingHistory = () => {
                         type="button"
                         onClick={() => setTransferOpenId(null)}
                         disabled={transferLoadingId === booking._id}
-                        className="rounded-lg bg-white/5 px-4 py-2 text-sm font-medium text-slate-200 transition-colors hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
+                        className="w-full rounded-lg bg-white/5 px-4 py-2 text-sm font-medium text-slate-200 transition-colors hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
                       >
                         Cancel
                       </button>
@@ -345,12 +345,12 @@ const BookingHistory = () => {
                     </div>
                   </div>
 
-                  <div className="mt-3 flex gap-2">
+                  <div className="mt-3 flex flex-col gap-2 sm:flex-row">
                     <button
                       type="button"
                       onClick={() => submitRefundRequest(booking._id)}
                       disabled={refundLoadingId === booking._id}
-                      className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-60"
+                      className="w-full rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
                     >
                       {refundLoadingId === booking._id ? 'Submitting…' : 'Submit Request'}
                     </button>
@@ -358,7 +358,7 @@ const BookingHistory = () => {
                       type="button"
                       onClick={() => setRefundOpenId(null)}
                       disabled={refundLoadingId === booking._id}
-                      className="rounded-lg bg-white/5 px-4 py-2 text-sm font-medium text-slate-200 transition-colors hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
+                      className="w-full rounded-lg bg-white/5 px-4 py-2 text-sm font-medium text-slate-200 transition-colors hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
                     >
                       Cancel
                     </button>
