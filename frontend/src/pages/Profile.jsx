@@ -1,8 +1,22 @@
 import { useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import { User, Mail, Shield, Calendar, Pencil, Plus, LogOut } from 'lucide-react';
+import { User, Mail, Shield, Calendar, Pencil, Plus, LogOut, CreditCard, Star, Trash2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
+import {
+  createSavedCardRecord,
+  formatCardNumber,
+  formatExpiry,
+  getCardExpiryLabel,
+  getMaskedCardNumber,
+} from '../utils/paymentCards';
+
+const EMPTY_CARD_FORM = {
+  bankName: '',
+  cardholderName: '',
+  cardNumber: '',
+  expiryDate: '',
+};
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -21,6 +35,9 @@ const Profile = () => {
   });
   const [saveError, setSaveError] = useState('');
   const [preferencesError, setPreferencesError] = useState('');
+  const [cardForm, setCardForm] = useState(EMPTY_CARD_FORM);
+  const [cardsError, setCardsError] = useState('');
+  const [cardsSuccess, setCardsSuccess] = useState('');
   const [passwordForm, setPasswordForm] = useState({
     currentPassword: '',
     newPassword: '',
@@ -34,8 +51,24 @@ const Profile = () => {
   const [isDeletingProfile, setIsDeletingProfile] = useState(false);
   const [saving, setSaving] = useState(false);
   const [savingPreferences, setSavingPreferences] = useState(false);
+  const [savingCards, setSavingCards] = useState(false);
   const [savingPassword, setSavingPassword] = useState(false);
   const [avatarLoadFailed, setAvatarLoadFailed] = useState(false);
+
+  const syncProfileState = (data) => {
+    setProfileUser(data);
+
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      const parsedUser = JSON.parse(storedUser);
+      const merged = { ...parsedUser, ...data };
+      localStorage.setItem('user', JSON.stringify(merged));
+      updateUser?.(merged);
+      return;
+    }
+
+    updateUser?.(data);
+  };
 
   useEffect(() => {
     setProfileUser(user);
@@ -64,13 +97,7 @@ const Profile = () => {
     const fetchProfile = async () => {
       try {
         const { data } = await api.get('/users/profile');
-        setProfileUser(data);
-
-        const storedUser = localStorage.getItem('user');
-        if (storedUser) {
-          const parsedUser = JSON.parse(storedUser);
-          localStorage.setItem('user', JSON.stringify({ ...parsedUser, ...data }));
-        }
+        syncProfileState(data);
       } catch {
         setProfileUser(user);
       }
@@ -114,6 +141,7 @@ const Profile = () => {
     { icon: Shield,   label: 'Role',      value: profileUser?.role },
     { icon: Calendar, label: 'Joined',    value: profileUser?.createdAt ? new Date(profileUser.createdAt).toLocaleDateString() : null },
   ].filter((i) => i.value);
+  const paymentCards = Array.isArray(profileUser?.paymentCards) ? profileUser.paymentCards : [];
 
   const handleLogout = () => {
     logout();
@@ -199,17 +227,7 @@ const Profile = () => {
       }
 
       const { data } = await api.put('/users/profile', payload);
-      setProfileUser(data);
-
-      const storedUser = localStorage.getItem('user');
-      if (storedUser) {
-        const parsedUser = JSON.parse(storedUser);
-        const merged = { ...parsedUser, ...data };
-        localStorage.setItem('user', JSON.stringify(merged));
-        updateUser?.(merged);
-      } else {
-        updateUser?.(data);
-      }
+      syncProfileState(data);
 
       setIsEditing(false);
     } catch (err) {
@@ -241,21 +259,119 @@ const Profile = () => {
         preferences: preferencesForm,
       });
 
-      setProfileUser(data);
-
-      const storedUser = localStorage.getItem('user');
-      if (storedUser) {
-        const parsedUser = JSON.parse(storedUser);
-        const merged = { ...parsedUser, ...data };
-        localStorage.setItem('user', JSON.stringify(merged));
-        updateUser?.(merged);
-      } else {
-        updateUser?.(data);
-      }
+      syncProfileState(data);
     } catch (err) {
       setPreferencesError(err.response?.data?.message || 'Failed to save preferences.');
     } finally {
       setSavingPreferences(false);
+    }
+  };
+
+  const onCardFormChange = (e) => {
+    const { name, value } = e.target;
+    let nextValue = value;
+
+    if (name === 'cardNumber') nextValue = formatCardNumber(value);
+    if (name === 'expiryDate') nextValue = formatExpiry(value);
+
+    setCardForm((prev) => ({ ...prev, [name]: nextValue }));
+    setCardsError('');
+    setCardsSuccess('');
+  };
+
+  const persistPaymentCards = async (nextCards, successMessage) => {
+    if (!user?._id) return;
+
+    setSavingCards(true);
+    setCardsError('');
+    setCardsSuccess('');
+
+    try {
+      const { data } = await api.put('/users/profile', {
+        paymentCards: nextCards,
+      });
+
+      syncProfileState(data);
+      setCardsSuccess(successMessage);
+    } catch (err) {
+      setCardsError(err.response?.data?.message || 'Failed to update saved cards.');
+      throw err;
+    } finally {
+      setSavingCards(false);
+    }
+  };
+
+  const handleAddCard = async (e) => {
+    e.preventDefault();
+
+    const bankName = String(cardForm.bankName || '').trim();
+    const cardholderName = String(cardForm.cardholderName || '').trim();
+    const cardDigits = String(cardForm.cardNumber || '').replace(/\D/g, '');
+    const expiryDate = String(cardForm.expiryDate || '').trim();
+
+    if (!bankName || !cardholderName) {
+      setCardsError('Bank name and cardholder name are required.');
+      return;
+    }
+
+    if (cardDigits.length !== 16) {
+      setCardsError('Enter a valid 16-digit card number.');
+      return;
+    }
+
+    if (!/^\d{2}\/\d{2}$/.test(expiryDate)) {
+      setCardsError('Enter the expiry date as MM/YY.');
+      return;
+    }
+
+    const nextCards = [
+      ...paymentCards,
+      createSavedCardRecord({
+        bankName,
+        cardholderName,
+        cardNumber: cardDigits,
+        expiryDate,
+        isDefault: paymentCards.length === 0,
+      }),
+    ];
+
+    try {
+      await persistPaymentCards(nextCards, 'Card saved successfully.');
+      setCardForm(EMPTY_CARD_FORM);
+    } catch {
+      // Error state is handled in persistPaymentCards.
+    }
+  };
+
+  const handleSetDefaultCard = async (cardId) => {
+    const currentDefault = paymentCards.find((card) => card.isDefault)?._id;
+    if (!cardId || currentDefault === cardId) return;
+
+    const nextCards = paymentCards.map((card) => ({
+      ...card,
+      isDefault: card._id === cardId,
+    }));
+
+    try {
+      await persistPaymentCards(nextCards, 'Default card updated.');
+    } catch {
+      // Error state is handled in persistPaymentCards.
+    }
+  };
+
+  const handleRemoveCard = async (cardId) => {
+    const remainingCards = paymentCards.filter((card) => card._id !== cardId);
+    const nextCards = remainingCards.map((card, index) => ({
+      ...card,
+      isDefault: remainingCards.length > 0 && (card.isDefault || index === 0)
+        ? index === (remainingCards.findIndex((item) => item.isDefault) === -1 ? 0 : remainingCards.findIndex((item) => item.isDefault))
+        : false,
+    }));
+
+    try {
+      await persistPaymentCards(nextCards, 'Saved card removed.');
+    } catch {
+      // Error state is handled in persistPaymentCards.
     }
   };
 
@@ -578,6 +694,149 @@ const Profile = () => {
               </button>
             </div>
           </form>
+        </div>
+
+        <div className="rounded-2xl border border-white/[0.06] bg-[#141B2D] p-6 xl:col-span-3">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-500">Saved Cards</h2>
+              <p className="mt-2 text-sm text-slate-400">
+                Manage multiple bank cards for checkout. Only one saved card can be selected when you pay.
+              </p>
+            </div>
+            <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-xs text-emerald-300">
+              <CreditCard className="h-3.5 w-3.5" />
+              Only masked card details are stored
+            </div>
+          </div>
+
+          <div className="mt-6 grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
+            <div className="space-y-3">
+              {paymentCards.length > 0 ? (
+                paymentCards.map((card) => (
+                  <div
+                    key={card._id}
+                    className="rounded-2xl border border-white/10 bg-white/5 p-4"
+                  >
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <p className="text-base font-semibold text-white">{card.bankName}</p>
+                          {card.isDefault && (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2.5 py-0.5 text-xs font-medium text-amber-300">
+                              <Star className="h-3 w-3" />
+                              Default
+                            </span>
+                          )}
+                        </div>
+                        <p className="mt-1 text-sm text-slate-300">{card.brand} · {getMaskedCardNumber(card)}</p>
+                        <p className="mt-1 text-xs text-slate-500">
+                          {card.cardholderName} · Expires {getCardExpiryLabel(card)}
+                        </p>
+                      </div>
+
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleSetDefaultCard(card._id)}
+                          disabled={savingCards || card.isDefault}
+                          className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-medium text-slate-200 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          Set Default
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveCard(card._id)}
+                          disabled={savingCards}
+                          className="inline-flex items-center gap-1 rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs font-medium text-red-300 transition hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="rounded-2xl border border-dashed border-white/10 bg-white/[0.03] p-6 text-sm text-slate-400">
+                  No saved cards yet. Add one to reuse it during checkout.
+                </div>
+              )}
+            </div>
+
+            <form onSubmit={handleAddCard} className="rounded-2xl border border-white/10 bg-[#0B1120] p-5">
+              <h3 className="text-base font-semibold text-white">Add Bank Card</h3>
+              <p className="mt-1 text-sm text-slate-400">Store a masked card for faster payment next time.</p>
+
+              <div className="mt-5 space-y-4">
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-white/70">Bank Name</label>
+                  <input
+                    name="bankName"
+                    value={cardForm.bankName}
+                    onChange={onCardFormChange}
+                    className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-white placeholder:text-white/40 focus:border-indigo-500/50 focus:outline-none"
+                    placeholder="Bank of Ceylon"
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-white/70">Cardholder Name</label>
+                  <input
+                    name="cardholderName"
+                    value={cardForm.cardholderName}
+                    onChange={onCardFormChange}
+                    className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-white placeholder:text-white/40 focus:border-indigo-500/50 focus:outline-none"
+                    placeholder="Name on card"
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-white/70">Card Number</label>
+                  <input
+                    name="cardNumber"
+                    value={cardForm.cardNumber}
+                    onChange={onCardFormChange}
+                    className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-white placeholder:text-white/40 focus:border-indigo-500/50 focus:outline-none"
+                    placeholder="1234 5678 9012 3456"
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-white/70">Expiry Date</label>
+                  <input
+                    name="expiryDate"
+                    value={cardForm.expiryDate}
+                    onChange={onCardFormChange}
+                    className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-white placeholder:text-white/40 focus:border-indigo-500/50 focus:outline-none"
+                    placeholder="MM/YY"
+                  />
+                </div>
+              </div>
+
+              {cardsError && (
+                <div className="mt-4 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+                  {cardsError}
+                </div>
+              )}
+
+              {cardsSuccess && (
+                <div className="mt-4 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300">
+                  {cardsSuccess}
+                </div>
+              )}
+
+              <div className="mt-5 flex justify-end">
+                <button
+                  type="submit"
+                  disabled={savingCards}
+                  className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-60"
+                >
+                  {savingCards ? 'Saving card...' : 'Save Card'}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
 
         <div className="rounded-2xl border border-red-500/30 bg-red-950/30 p-6 xl:col-span-3">
