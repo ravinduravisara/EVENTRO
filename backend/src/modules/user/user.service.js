@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
+const mongoose = require('mongoose');
 const User = require('../../models/User');
 const PendingRegistration = require('../../models/PendingRegistration');
 const cloudinary = require('../../config/cloudinary');
@@ -18,6 +19,86 @@ const hashOtp = (otp) => crypto.createHash('sha256').update(otp).digest('hex');
 
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '30d' });
+};
+
+const normalizePaymentCards = (cards) => {
+  if (!Array.isArray(cards)) {
+    const error = new Error('Payment cards must be an array');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  if (cards.length > 10) {
+    const error = new Error('You can save up to 10 cards');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const normalizedCards = cards.map((card) => {
+    const bankName = String(card?.bankName || '').trim();
+    const cardholderName = String(card?.cardholderName || '').trim();
+    const brand = String(card?.brand || 'Card').trim() || 'Card';
+    const last4 = String(card?.last4 || '').replace(/\D/g, '').slice(-4);
+    const expiryMonth = Number(card?.expiryMonth);
+    const expiryYear = Number(card?.expiryYear);
+
+    if (!bankName) {
+      const error = new Error('Bank name is required for saved cards');
+      error.statusCode = 400;
+      throw error;
+    }
+
+    if (!cardholderName) {
+      const error = new Error('Cardholder name is required for saved cards');
+      error.statusCode = 400;
+      throw error;
+    }
+
+    if (last4.length !== 4) {
+      const error = new Error('Saved cards must include the last four digits');
+      error.statusCode = 400;
+      throw error;
+    }
+
+    if (!Number.isInteger(expiryMonth) || expiryMonth < 1 || expiryMonth > 12) {
+      const error = new Error('Saved cards must include a valid expiry month');
+      error.statusCode = 400;
+      throw error;
+    }
+
+    if (!Number.isInteger(expiryYear) || expiryYear < 2000 || expiryYear > 9999) {
+      const error = new Error('Saved cards must include a valid expiry year');
+      error.statusCode = 400;
+      throw error;
+    }
+
+    const normalizedCard = {
+      bankName,
+      cardholderName,
+      brand,
+      last4,
+      expiryMonth,
+      expiryYear,
+      isDefault: Boolean(card?.isDefault),
+    };
+
+    if (card?._id && mongoose.Types.ObjectId.isValid(card._id)) {
+      normalizedCard._id = card._id;
+    }
+
+    return normalizedCard;
+  });
+
+  if (normalizedCards.length > 0) {
+    let defaultIndex = normalizedCards.findIndex((card) => card.isDefault);
+    if (defaultIndex === -1) defaultIndex = 0;
+
+    normalizedCards.forEach((card, index) => {
+      card.isDefault = index === defaultIndex;
+    });
+  }
+
+  return normalizedCards;
 };
 
 const uploadToCloudinary = (buffer) => {
@@ -139,6 +220,7 @@ const login = async ({ email, password }) => {
     role: user.role,
     avatar: user.avatar,
     preferences: user.preferences,
+    paymentCards: user.paymentCards,
     token: generateToken(user._id),
   };
 };
@@ -157,7 +239,7 @@ const updateProfile = async (userId, updateData, uploadData = {}) => {
   const { avatarBuffer, avatarMimeType } = uploadData;
 
   // Only allow safe, user-editable fields.
-  const allowed = ['firstName', 'lastName', 'avatar', 'preferences'];
+  const allowed = ['firstName', 'lastName', 'avatar', 'preferences', 'paymentCards'];
   const safeUpdate = allowed.reduce((acc, key) => {
     if (Object.prototype.hasOwnProperty.call(updateData || {}, key)) {
       acc[key] = updateData[key];
@@ -206,6 +288,10 @@ const updateProfile = async (userId, updateData, uploadData = {}) => {
     }
 
     safeUpdate.preferences = nextPreferences;
+  }
+
+  if (Object.prototype.hasOwnProperty.call(safeUpdate, 'paymentCards')) {
+    safeUpdate.paymentCards = normalizePaymentCards(safeUpdate.paymentCards);
   }
 
   if (avatarBuffer) {

@@ -5,6 +5,7 @@ import {
   Ticket, ImageIcon, X,
 } from 'lucide-react';
 import api from '../../services/api';
+import { API_BASE_URL } from '../../services/api';
 
 const STATUS_CFG = {
   draft:     { color: 'bg-slate-500/15 text-slate-400',     icon: Clock },
@@ -230,14 +231,14 @@ const AdminEvents = () => {
                       <CalendarDays size={24} />
                     </div>
                     <img
-                      src={`/api/events/${event._id}/image`}
+                      src={`${API_BASE_URL}/events/${event._id}/image`}
                       alt=""
                       loading="lazy"
                       decoding="async"
                       onError={(e) => {
                         e.currentTarget.style.display = 'none';
                       }}
-                      className="absolute inset-0 w-full h-full object-cover"
+                      className="absolute inset-0 w-full h-full object-contain"
                     />
                   </div>
 
@@ -301,14 +302,14 @@ const AdminEvents = () => {
                 <ImageIcon size={28} />
               </div>
               <img
-                src={`/api/events/${selected._id}/image`}
+                src={`${API_BASE_URL}/events/${selected._id}/image`}
                 alt=""
                 loading="lazy"
                 decoding="async"
                 onError={(e) => {
                   e.currentTarget.style.display = 'none';
                 }}
-                className="absolute inset-0 w-full h-full object-cover"
+                className="absolute inset-0 w-full h-full object-contain"
               />
             </div>
             <div className="p-6 space-y-4">
