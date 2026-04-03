@@ -1,12 +1,10 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useMemo, useState } from "react";
 import { useAuth } from "../context/AuthContext";
-import { useTheme } from "../context/ThemeContext";
 import logoImg from "../assets/icons/logo.png";
 
 const Navbar = () => {
   const { user, logout } = useAuth();
-  const { darkMode, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -72,16 +70,6 @@ const Navbar = () => {
                   {l.label}
                 </Link>
               ))}
-
-              {/* Theme toggle */}
-              <button
-                onClick={toggleTheme}
-                className="ml-1 inline-flex items-center justify-center rounded-xl p-2 text-white/60 hover:bg-white/10 hover:text-white transition"
-                aria-label="Toggle theme"
-                title="Toggle theme"
-              >
-                {darkMode ? "☀️" : "🌙"}
-              </button>
 
               {/* User area */}
               {user && (
@@ -164,14 +152,6 @@ const Navbar = () => {
 
             {/* Mobile buttons */}
             <div className="flex items-center gap-2 md:hidden">
-              <button
-                onClick={toggleTheme}
-                className="inline-flex items-center justify-center rounded-xl p-2 text-white/60 hover:bg-white/10 hover:text-white"
-                aria-label="Toggle theme"
-              >
-                {darkMode ? "☀️" : "🌙"}
-              </button>
-
               <button
                 onClick={() => setMobileOpen((s) => !s)}
                 className="inline-flex items-center justify-center rounded-xl p-2 text-white/60 hover:bg-white/10 hover:text-white"
