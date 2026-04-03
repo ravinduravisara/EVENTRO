@@ -125,7 +125,7 @@ const EventDetails = () => {
             loading="lazy"
             decoding="async"
             onError={() => setImgFailed(true)}
-            className="w-full h-64 sm:h-80 object-cover"
+            className="w-full h-64 sm:h-80 object-contain"
           />
         ) : (
           <div className="w-full h-64 sm:h-80 flex items-center justify-center text-slate-600">

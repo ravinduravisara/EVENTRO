@@ -94,7 +94,7 @@ const EventCard = ({ event, currentUserId, onDelete }) => {
         </div>
       )}
       {/* Image */}
-      <div className="relative h-44 bg-slate-800 overflow-hidden">
+      <div className="relative h-52 sm:h-56 bg-slate-800 overflow-hidden">
         {!imgFailed ? (
           <img
             src={imageSrc}
@@ -102,7 +102,7 @@ const EventCard = ({ event, currentUserId, onDelete }) => {
             loading="lazy"
             decoding="async"
             onError={() => setImgFailed(true)}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            className="w-full h-full object-contain"
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-slate-600">

@@ -238,7 +238,7 @@ const AdminEvents = () => {
                       onError={(e) => {
                         e.currentTarget.style.display = 'none';
                       }}
-                      className="absolute inset-0 w-full h-full object-cover"
+                      className="absolute inset-0 w-full h-full object-contain"
                     />
                   </div>
 
@@ -309,7 +309,7 @@ const AdminEvents = () => {
                 onError={(e) => {
                   e.currentTarget.style.display = 'none';
                 }}
-                className="absolute inset-0 w-full h-full object-cover"
+                className="absolute inset-0 w-full h-full object-contain"
               />
             </div>
             <div className="p-6 space-y-4">
