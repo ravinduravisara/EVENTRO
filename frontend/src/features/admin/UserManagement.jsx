@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import { useEffect, useMemo, useState } from 'react';
 import {
   AlertTriangle,
@@ -22,6 +23,14 @@ const UserManagement = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
+=======
+import { useState } from 'react';
+import useFetch from '../../hooks/useFetch';
+import Button from '../../components/Button';
+
+const UserManagement = () => {
+  const { data, loading } = useFetch('/users');
+>>>>>>> parent of a197612 (Event management)
   const [searchTerm, setSearchTerm] = useState('');
   const [filterRole, setFilterRole] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
@@ -178,6 +187,7 @@ const UserManagement = () => {
     return (
       <div className="flex h-96 items-center justify-center">
         <div className="text-center">
+<<<<<<< HEAD
           <div className="mb-4 inline-block h-12 w-12 animate-spin rounded-full border-b-2 border-indigo-500"></div>
           <p className="text-gray-400">Loading users...</p>
         </div>
@@ -198,11 +208,16 @@ const UserManagement = () => {
           >
             <RefreshCw className="h-4 w-4" /> Retry
           </button>
+=======
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mb-4"></div>
+          <p className="text-gray-600">Loading users...</p>
+>>>>>>> parent of a197612 (Event management)
         </div>
       </div>
     );
   }
 
+<<<<<<< HEAD
   return (
     <div className="space-y-6">
       {actionMessage && (
@@ -235,11 +250,55 @@ const UserManagement = () => {
         <div className="flex flex-col gap-4 sm:flex-row">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
+=======
+  const users = data?.users || [];
+  const filteredUsers = users.filter((user) => {
+    const matchesSearch =
+      user.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.lastName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.email?.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesRole = filterRole === 'all' || user.role === filterRole;
+    
+    return matchesSearch && matchesRole;
+  });
+
+  return (
+    <div className="space-y-8">
+      {/* Header */}
+      <div>
+        <h1 className="text-4xl font-bold text-gray-900 mb-2">User Management</h1>
+        <p className="text-gray-600">View and manage platform users</p>
+      </div>
+
+      {/* User Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <StatCard label="Total Users" value={users.length} color="blue" />
+        <StatCard
+          label="Organizers"
+          value={users.filter((u) => u.role === 'organizer').length}
+          color="purple"
+        />
+        <StatCard
+          label="Admins"
+          value={users.filter((u) => u.role === 'admin').length}
+          color="red"
+        />
+      </div>
+
+      {/* Filters */}
+      <div className="bg-white rounded-xl shadow-lg p-6 space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Search */}
+          <div className="relative">
+            <span className="absolute left-3 top-3 text-gray-400">🔍</span>
+>>>>>>> parent of a197612 (Event management)
             <input
               type="text"
               placeholder="Search by name or email..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
+<<<<<<< HEAD
               className="w-full rounded-lg border border-gray-700/50 bg-[#0B1120] py-2.5 pl-10 pr-4 text-gray-200 placeholder-gray-500 focus:border-indigo-500/50 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
             />
           </div>
@@ -248,6 +307,17 @@ const UserManagement = () => {
             value={filterRole}
             onChange={(e) => setFilterRole(e.target.value)}
             className="min-w-[160px] rounded-lg border border-gray-700/50 bg-[#0B1120] px-4 py-2.5 text-gray-200 focus:border-indigo-500/50 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+=======
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            />
+          </div>
+
+          {/* Role Filter */}
+          <select
+            value={filterRole}
+            onChange={(e) => setFilterRole(e.target.value)}
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+>>>>>>> parent of a197612 (Event management)
           >
             <option value="all">All Roles</option>
             <option value="user">Regular Users</option>
@@ -268,6 +338,7 @@ const UserManagement = () => {
         </div>
       </div>
 
+<<<<<<< HEAD
       <div className="overflow-hidden rounded-xl border border-gray-700/50 bg-[#141B2D]">
         {filteredUsers.length === 0 ? (
           <div className="py-16 text-center">
@@ -278,10 +349,18 @@ const UserManagement = () => {
                 ? 'Try adjusting your search or filters'
                 : 'Users will appear here once they register'}
             </p>
+=======
+      {/* Users Table */}
+      <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+        {filteredUsers.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="text-gray-600 text-lg">No users found</p>
+>>>>>>> parent of a197612 (Event management)
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
+<<<<<<< HEAD
               <thead>
                 <tr className="border-b border-gray-700/50">
                   <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">User</th>
@@ -406,11 +485,94 @@ const UserManagement = () => {
                     </tr>
                   );
                 })}
+=======
+              <thead className="bg-gradient-to-r from-indigo-50 to-purple-50 border-b border-gray-200">
+                <tr>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
+                    User
+                  </th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
+                    Email
+                  </th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
+                    Role
+                  </th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
+                    Joined
+                  </th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
+                    Status
+                  </th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {filteredUsers.map((user, index) => (
+                  <tr key={user._id || index} className="hover:bg-gray-50 transition">
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                          {user.firstName?.[0] || 'U'}
+                        </div>
+                        <div>
+                          <p className="font-semibold text-gray-900">
+                            {user.firstName} {user.lastName}
+                          </p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-2 text-gray-600">
+                        <span>📧</span>
+                        {user.email}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <RoleBadge role={user.role} />
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-2 text-gray-600 text-sm">
+                        <span>📅</span>
+                        {user.createdAt
+                          ? new Date(user.createdAt).toLocaleDateString()
+                          : 'N/A'}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium bg-green-50 text-green-700">
+                        <span>✓</span>
+                        Active
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex gap-2">
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          className="text-xs py-1 px-3"
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          variant="danger"
+                          size="sm"
+                          className="text-xs py-1 px-3"
+                        >
+                          Ban
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+>>>>>>> parent of a197612 (Event management)
               </tbody>
             </table>
           </div>
         )}
       </div>
+<<<<<<< HEAD
 
       {filteredUsers.length > 0 && (
         <div className="text-sm text-gray-500">
@@ -452,41 +614,63 @@ const UserManagement = () => {
           </div>
         </div>
       )}
+=======
+>>>>>>> parent of a197612 (Event management)
     </div>
   );
 };
 
+<<<<<<< HEAD
 const StatCard = ({ icon: Icon, label, value, color }) => {
   const colors = {
     blue: { bg: 'bg-blue-500/10', border: 'border-blue-500/20', icon: 'text-blue-400' },
     cyan: { bg: 'bg-cyan-500/10', border: 'border-cyan-500/20', icon: 'text-cyan-400' },
     purple: { bg: 'bg-purple-500/10', border: 'border-purple-500/20', icon: 'text-purple-400' },
     red: { bg: 'bg-red-500/10', border: 'border-red-500/20', icon: 'text-red-400' },
+=======
+const StatCard = ({ label, value, color }) => {
+  const colorClasses = {
+    blue: 'bg-blue-50 border-blue-200 text-blue-900',
+    purple: 'bg-purple-50 border-purple-200 text-purple-900',
+    red: 'bg-red-50 border-red-200 text-red-900',
+>>>>>>> parent of a197612 (Event management)
   };
-  const c = colors[color] || colors.blue;
 
   return (
+<<<<<<< HEAD
     <div className={`${c.bg} ${c.border} rounded-xl border p-5`}>
       <div className="mb-3 flex items-center justify-between">
         <p className="text-sm font-medium text-gray-400">{label}</p>
         <Icon className={`h-5 w-5 ${c.icon}`} />
       </div>
       <p className="text-3xl font-bold text-white">{value}</p>
+=======
+    <div className={`${colorClasses[color]} border rounded-lg p-6`}>
+      <p className="text-sm font-medium opacity-75">{label}</p>
+      <p className="text-3xl font-bold mt-2">{value}</p>
+>>>>>>> parent of a197612 (Event management)
     </div>
   );
 };
 
 const RoleBadge = ({ role }) => {
   const roles = {
-    user: { bg: 'bg-blue-500/10', text: 'text-blue-400', border: 'border-blue-500/20', label: 'User' },
-    organizer: { bg: 'bg-purple-500/10', text: 'text-purple-400', border: 'border-purple-500/20', label: 'Organizer' },
-    admin: { bg: 'bg-red-500/10', text: 'text-red-400', border: 'border-red-500/20', label: 'Admin' },
+    user: { bg: 'bg-blue-50', text: 'text-blue-700', icon: '👤' },
+    organizer: { bg: 'bg-purple-50', text: 'text-purple-700', icon: '🎯' },
+    admin: { bg: 'bg-red-50', text: 'text-red-700', icon: '🛡️' },
   };
-  const r = roles[role] || roles.user;
+
+  const roleData = roles[role] || roles.user;
 
   return (
+<<<<<<< HEAD
     <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-medium ${r.bg} ${r.text} ${r.border}`}>
       {r.label}
+=======
+    <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium ${roleData.bg} ${roleData.text}`}>
+      <span>{roleData.icon}</span>
+      {role.charAt(0).toUpperCase() + role.slice(1)}
+>>>>>>> parent of a197612 (Event management)
     </span>
   );
 };

@@ -1,9 +1,9 @@
 import { Link } from 'react-router-dom';
-import { Calendar, Ticket, ChevronRight, Inbox } from 'lucide-react';
 import useFetch from '../../hooks/useFetch';
 import api from '../../services/api';
 import { useState } from 'react';
 
+<<<<<<< HEAD
 const statusStyles = {
   confirmed: 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/20',
   cancelled: 'bg-red-500/15 text-red-400 border border-red-500/20',
@@ -17,6 +17,8 @@ const refundStatusStyles = {
   rejected: 'bg-red-500/15 text-red-300 border border-red-500/20',
 };
 
+=======
+>>>>>>> parent of a197612 (Event management)
 const BookingHistory = () => {
   // Avoid caching so new bookings appear immediately.
   const { data: bookings, loading, error, refetch } = useFetch('/bookings/my', { cache: false });
@@ -123,23 +125,11 @@ const BookingHistory = () => {
     }
   };
 
-  if (loading)
-    return (
-      <div className="flex items-center justify-center py-32">
-        <div className="h-10 w-10 animate-spin rounded-full border-4 border-indigo-500 border-t-transparent" />
-      </div>
-    );
-
-  if (error)
-    return (
-      <div className="mx-auto max-w-3xl px-4 py-12">
-        <div className="rounded-xl border border-red-500/20 bg-red-500/10 p-6 text-center text-red-400">
-          {error}
-        </div>
-      </div>
-    );
+  if (loading) return <p>Loading bookings...</p>;
+  if (error) return <p className="text-red-500">{error}</p>;
 
   return (
+<<<<<<< HEAD
     <div className="mx-auto max-w-4xl px-4 py-8">
       {/* Header */}
       <div className="mb-8 flex items-center gap-3">
@@ -392,6 +382,31 @@ const BookingHistory = () => {
           {refundSuccess}
         </div>
       )}
+=======
+    <div>
+      <h1 className="text-3xl font-bold mb-6">My Bookings</h1>
+      <div className="space-y-4">
+        {bookings?.map((booking) => (
+          <div key={booking._id} className="bg-white p-4 rounded-lg shadow flex justify-between items-center">
+            <div>
+              <h3 className="font-semibold">{booking.event?.title}</h3>
+              <p className="text-sm text-gray-500">{new Date(booking.event?.date).toLocaleDateString()}</p>
+              <span className={`text-xs px-2 py-1 rounded-full ${
+                booking.status === 'confirmed' ? 'bg-green-100 text-green-700' :
+                booking.status === 'cancelled' ? 'bg-red-100 text-red-700' :
+                'bg-gray-100 text-gray-700'
+              }`}>{booking.status}</span>
+            </div>
+            {booking.status === 'confirmed' && (
+              <Link to={`/bookings/${booking._id}/ticket`} className="text-primary hover:underline">
+                View Ticket
+              </Link>
+            )}
+          </div>
+        ))}
+        {(!bookings || bookings.length === 0) && <p className="text-gray-500">No bookings yet.</p>}
+      </div>
+>>>>>>> parent of a197612 (Event management)
     </div>
   );
 };

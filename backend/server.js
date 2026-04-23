@@ -6,9 +6,10 @@ const { runEventReminderJob } = require('./src/scripts/eventReminderJob');
 const PORT = process.env.PORT || 5000;
 
 connectDB().then(() => {
-  const server = app.listen(PORT, () => {
+  app.listen(PORT, () => {
     logger.info('Server running on port ' + PORT);
   });
+<<<<<<< HEAD
 
   // Automated event reminders (default ON). Set EVENT_REMINDERS_ENABLED=false to disable.
   const remindersEnabled = String(process.env.EVENT_REMINDERS_ENABLED || 'true').toLowerCase() !== 'false';
@@ -34,4 +35,6 @@ connectDB().then(() => {
       throw err;
     }
   });
+=======
+>>>>>>> parent of a197612 (Event management)
 });

@@ -2,7 +2,6 @@ const express = require('express');
 const router = express.Router();
 const userController = require('./user.controller');
 const auth = require('../../middleware/auth');
-const roleCheck = require('../../middleware/roleCheck');
 const upload = require('../../middleware/upload');
 
 router.post('/register', upload.single('avatar'), userController.register);
@@ -13,6 +12,7 @@ router.post('/resend-verification-email', userController.resendVerificationEmail
 router.post('/forgot-access-otp/request', userController.requestForgotAccessOtp);
 router.post('/forgot-access-otp/verify', userController.verifyForgotAccessOtp);
 router.get('/profile', auth, userController.getProfile);
+<<<<<<< HEAD
 router.put('/profile', auth, upload.single('avatar'), userController.updateProfile);
 router.put('/profile/password', auth, userController.changePassword);
 router.delete('/profile', auth, userController.deleteOwnProfile);
@@ -20,5 +20,8 @@ router.get('/', auth, roleCheck('admin', 'organizer'), userController.getAllUser
 router.patch('/:id/role', auth, roleCheck('admin', 'organizer'), userController.updateUserRole);
 router.patch('/:id/status', auth, roleCheck('admin', 'organizer'), userController.updateUserStatus);
 router.delete('/:id', auth, roleCheck('admin'), userController.deleteUser);
+=======
+router.put('/profile', auth, userController.updateProfile);
+>>>>>>> parent of a197612 (Event management)
 
 module.exports = router;

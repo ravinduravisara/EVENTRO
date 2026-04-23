@@ -617,6 +617,7 @@ const verifyForgotAccessOtp = async (email, otp) => {
   };
 };
 
+<<<<<<< HEAD
 const getAllUsers = async () => {
   const users = await User.find()
     .select('-password -emailVerificationToken -emailVerificationTokenExpires -emailVerificationOtpHash -emailVerificationOtpExpires')
@@ -786,3 +787,6 @@ module.exports = {
   deleteUser,
   deleteOwnProfile,
 };
+=======
+module.exports = { register, login, getProfile, updateProfile, verifyEmail, resendVerificationEmail };
+>>>>>>> parent of a197612 (Event management)

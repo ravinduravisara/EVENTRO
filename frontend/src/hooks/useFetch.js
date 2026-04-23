@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import api from '../services/api';
 
 const CACHE_TTL_MS = 30_000;
@@ -22,7 +22,6 @@ const useFetch = (url, options = {}) => {
   const [data, setData] = useState(() => (hasFreshCache ? cached.data : null));
   const [loading, setLoading] = useState(() => !hasFreshCache);
   const [error, setError] = useState(null);
-  const [fetchKey, setFetchKey] = useState(0);
 
   useEffect(() => {
     const cachedNow = cacheKey ? responseCache.get(cacheKey) : null;
@@ -32,10 +31,15 @@ const useFetch = (url, options = {}) => {
 
     const fetchData = async () => {
       try {
+<<<<<<< HEAD
         // Only show a spinner if we don't already have cached data.
         if (!hasFreshCacheNow) setLoading(true);
         setError(null);
         const response = await api.get(url, { ...axiosOptions, signal: controller.signal });
+=======
+        setLoading(true);
+        const response = await api.get(url, options);
+>>>>>>> parent of a197612 (Event management)
         setData(response.data);
         if (cacheKey) responseCache.set(cacheKey, { data: response.data, ts: Date.now() });
       } catch (err) {
@@ -46,13 +50,16 @@ const useFetch = (url, options = {}) => {
       }
     };
 
+<<<<<<< HEAD
     if (url) fetchData();
     return () => controller.abort();
   }, [url, fetchKey, cacheKey, ttl]);
+=======
+    fetchData();
+  }, [url]);
+>>>>>>> parent of a197612 (Event management)
 
-  const refetch = useCallback(() => setFetchKey((k) => k + 1), []);
-
-  return { data, loading, error, refetch };
+  return { data, loading, error, refetch: () => setData(null) };
 };
 
 export default useFetch;
