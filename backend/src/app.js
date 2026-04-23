@@ -10,7 +10,6 @@ require('./config/passport')(passport);
 
 const app = express();
 
-<<<<<<< HEAD
 const corsOptions = {
 	origin: (origin, callback) => {
 		// Allow non-browser and same-origin server calls.
@@ -39,11 +38,6 @@ app.options('*', cors(corsOptions));
 app.use(compression());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-=======
-app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
->>>>>>> parent of a197612 (Event management)
 app.use(passport.initialize());
 
 app.get('/', (_req, res) => {

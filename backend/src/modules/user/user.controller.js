@@ -126,7 +126,6 @@ const resendVerificationEmail = async (req, res, next) => {
   }
 };
 
-<<<<<<< HEAD
 const requestForgotAccessOtp = async (req, res, next) => {
   try {
     const { email } = req.body;
@@ -245,6 +244,3 @@ module.exports = {
   deleteUser,
   deleteOwnProfile,
 };
-=======
-module.exports = { register, login, getProfile, updateProfile, verifyEmail, resendVerificationEmail };
->>>>>>> parent of a197612 (Event management)

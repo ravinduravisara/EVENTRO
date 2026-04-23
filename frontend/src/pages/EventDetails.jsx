@@ -1,6 +1,10 @@
-import { useParams } from 'react-router-dom';
+import { useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import {
+  Calendar, MapPin, Clock, Users, Ticket, Tag, User,
+  AlertCircle, RefreshCw, ArrowLeft, CalendarDays, FileText,
+} from 'lucide-react';
 import useFetch from '../hooks/useFetch';
-<<<<<<< HEAD
 import { useAuth } from '../context/AuthContext';
 import { useLocation } from 'react-router-dom';
 import { API_BASE_URL } from '../services/api';
@@ -99,17 +103,6 @@ const EventDetails = () => {
   };
 
   const tierAvail = (t) => (t.totalQuantity || 0) - (t.soldQuantity || 0);
-=======
-import Button from '../components/Button';
-
-const EventDetails = () => {
-  const { id } = useParams();
-  const { data: event, loading, error } = useFetch(`/events/${id}`);
-
-  if (loading) return <p>Loading...</p>;
-  if (error) return <p className="text-red-500">{error}</p>;
-  if (!event) return <p>Event not found.</p>;
->>>>>>> parent of a197612 (Event management)
 
   const imageVersion = event.updatedAt ? new Date(event.updatedAt).getTime() : null;
   const eventImageSrc = imageVersion
@@ -117,7 +110,6 @@ const EventDetails = () => {
     : `${API_BASE_URL}/events/${event._id}/image`;
 
   return (
-<<<<<<< HEAD
     <div className="mx-auto max-w-4xl">
       {/* Back */}
       <button onClick={() => navigate(-1)} className="flex items-center gap-1.5 text-sm text-slate-400 hover:text-white mb-6 transition">
@@ -335,16 +327,6 @@ const EventDetails = () => {
             </button>
           </div>
         </div>
-=======
-    <div className="max-w-3xl mx-auto bg-white rounded-xl shadow p-6">
-      {event.image && <img src={event.image} alt={event.title} className="w-full h-64 object-cover rounded-lg mb-4" />}
-      <h1 className="text-3xl font-bold mb-2">{event.title}</h1>
-      <p className="text-gray-500 mb-4">{new Date(event.date).toLocaleDateString()} · {event.location}</p>
-      <p className="text-gray-700 mb-6">{event.description}</p>
-      <div className="flex items-center justify-between">
-        <span className="text-2xl font-bold text-primary">Rs. {event.ticketPrice}</span>
-        <Button>Book Ticket</Button>
->>>>>>> parent of a197612 (Event management)
       </div>
     </div>
   );

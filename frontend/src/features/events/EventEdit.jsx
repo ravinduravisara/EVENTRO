@@ -1,8 +1,8 @@
-import { useState, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useRef, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import {
   X, Plus, Trash2, Calendar, MapPin, Tag, FileText,
-  Clock, Ticket, ImageIcon, ChevronDown, AlertCircle,
+  Clock, Ticket, ImageIcon, ChevronDown, AlertCircle, Loader2,
 } from 'lucide-react';
 import api from '../../services/api';
 
@@ -11,32 +11,69 @@ const CATEGORIES = [
   'Health', 'Education', 'Community', 'Other',
 ];
 
-const EventCreate = () => {
+const toLocalDatetime = (iso) => {
+  if (!iso) return '';
+  const d = new Date(iso);
+  const offset = d.getTimezoneOffset();
+  const local = new Date(d.getTime() - offset * 60000);
+  return local.toISOString().slice(0, 16);
+};
+
+const EventEdit = () => {
+  const { id } = useParams();
   const navigate = useNavigate();
   const fileRef = useRef(null);
 
+  const [loading, setLoading] = useState(true);
   const [form, setForm] = useState({
-    title: '',
-    description: '',
-    date: '',
-    endDate: '',
-    registrationDeadline: '',
-    location: '',
-    category: '',
-    rules: '',
-    schedule: '',
-    totalTickets: 100,
+    title: '', description: '', date: '', endDate: '',
+    registrationDeadline: '', location: '', category: '',
+    rules: '', schedule: '', totalTickets: 100,
   });
-
   const [ticketTiers, setTicketTiers] = useState([
     { name: 'General Admission', price: 0, totalQuantity: 100 },
   ]);
-
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
+  const [existingImage, setExistingImage] = useState(null);
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [step, setStep] = useState(1);
+
+  /* ── Fetch existing event ── */
+  useEffect(() => {
+    const fetchEvent = async () => {
+      try {
+        const { data } = await api.get(`/events/${id}`);
+        setForm({
+          title: data.title || '',
+          description: data.description || '',
+          date: toLocalDatetime(data.date),
+          endDate: toLocalDatetime(data.endDate),
+          registrationDeadline: toLocalDatetime(data.registrationDeadline),
+          location: data.location || '',
+          category: data.category || '',
+          rules: data.rules || '',
+          schedule: data.schedule || '',
+          totalTickets: data.totalTickets || 100,
+        });
+        if (data.ticketTiers?.length) {
+          setTicketTiers(data.ticketTiers.map((t) => ({
+            name: t.name, price: t.price, totalQuantity: t.totalQuantity,
+          })));
+        }
+        if (data.image) {
+          setExistingImage(data.image);
+          setImagePreview(data.image);
+        }
+      } catch (err) {
+        setError('Failed to load event details');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchEvent();
+  }, [id]);
 
   /* ── Handlers ── */
   const handleChange = (e) => {
@@ -53,12 +90,14 @@ const EventCreate = () => {
     }
     setImageFile(file);
     setImagePreview(URL.createObjectURL(file));
+    setExistingImage(null);
     setError('');
   };
 
   const removeImage = () => {
     setImageFile(null);
     setImagePreview(null);
+    setExistingImage(null);
     if (fileRef.current) fileRef.current.value = '';
   };
 
@@ -128,11 +167,11 @@ const EventCreate = () => {
 
       if (imageFile) fd.append('image', imageFile);
 
-      await api.post('/events', fd);
+      await api.put(`/events/${id}`, fd);
 
-      navigate('/events');
+      navigate(`/events/${id}`);
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to create event');
+      setError(err.response?.data?.message || 'Failed to update event');
     } finally {
       setSubmitting(false);
     }
@@ -143,12 +182,19 @@ const EventCreate = () => {
     'w-full px-4 py-3 bg-[#0B1120] border border-slate-700/50 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition';
   const labelCls = 'block text-sm font-medium text-slate-300 mb-1.5';
 
+  if (loading)
+    return (
+      <div className="flex items-center justify-center py-32">
+        <Loader2 className="h-8 w-8 animate-spin text-indigo-500" />
+      </div>
+    );
+
   return (
     <div className="mx-auto max-w-3xl">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-white">Create New Event</h1>
-        <p className="text-slate-400 mt-1">Fill in the details to publish your event</p>
+        <h1 className="text-3xl font-bold text-white">Edit Event</h1>
+        <p className="text-slate-400 mt-1">Update the details of your event</p>
       </div>
 
       {/* Stepper */}
@@ -295,7 +341,7 @@ const EventCreate = () => {
                 <h2 className="text-lg font-semibold text-white flex items-center gap-2">
                   <Ticket className="w-5 h-5 text-indigo-400" /> Ticket Tiers
                 </h2>
-                <p className="text-sm text-slate-400 mt-0.5">Add one or more ticket types with different prices</p>
+                <p className="text-sm text-slate-400 mt-0.5">Update ticket types and pricing</p>
               </div>
               <button type="button" onClick={addTier} className="flex items-center gap-1.5 px-3 py-2 bg-indigo-500/15 text-indigo-400 rounded-xl text-sm font-medium hover:bg-indigo-500/25 transition">
                 <Plus className="w-4 h-4" /> Add Tier
@@ -316,34 +362,15 @@ const EventCreate = () => {
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div>
                       <label className="text-xs text-slate-500 mb-1 block">Tier Name *</label>
-                      <input
-                        value={tier.name}
-                        onChange={(e) => updateTier(i, 'name', e.target.value)}
-                        className={inputCls}
-                        placeholder="e.g. VIP, General"
-                      />
+                      <input value={tier.name} onChange={(e) => updateTier(i, 'name', e.target.value)} className={inputCls} placeholder="e.g. VIP, General" />
                     </div>
                     <div>
                       <label className="text-xs text-slate-500 mb-1 block">Price (Rs.) *</label>
-                      <input
-                        type="number"
-                        min="0"
-                        value={tier.price}
-                        onChange={(e) => updateTier(i, 'price', e.target.value)}
-                        className={inputCls}
-                        placeholder="0"
-                      />
+                      <input type="number" min="0" value={tier.price} onChange={(e) => updateTier(i, 'price', e.target.value)} className={inputCls} placeholder="0" />
                     </div>
                     <div>
                       <label className="text-xs text-slate-500 mb-1 block">Quantity *</label>
-                      <input
-                        type="number"
-                        min="1"
-                        value={tier.totalQuantity}
-                        onChange={(e) => updateTier(i, 'totalQuantity', e.target.value)}
-                        className={inputCls}
-                        placeholder="100"
-                      />
+                      <input type="number" min="1" value={tier.totalQuantity} onChange={(e) => updateTier(i, 'totalQuantity', e.target.value)} className={inputCls} placeholder="100" />
                     </div>
                   </div>
                 </div>
@@ -403,7 +430,7 @@ const EventCreate = () => {
                 <span className="text-slate-500">Total Seats</span>
                 <span className="text-white">{ticketTiers.reduce((s, t) => s + Number(t.totalQuantity || 0), 0)}</span>
                 <span className="text-slate-500">Image</span>
-                <span className="text-white">{imageFile ? '✓ Uploaded' : 'None'}</span>
+                <span className="text-white">{imageFile ? '✓ New image' : existingImage ? '✓ Existing' : 'None'}</span>
               </div>
             </div>
 
@@ -419,10 +446,10 @@ const EventCreate = () => {
                 {submitting ? (
                   <>
                     <span className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    Creating…
+                    Saving…
                   </>
                 ) : (
-                  'Publish Event'
+                  'Save Changes'
                 )}
               </button>
             </div>
@@ -433,4 +460,4 @@ const EventCreate = () => {
   );
 };
 
-export default EventCreate;
+export default EventEdit;

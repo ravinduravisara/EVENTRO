@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { CalendarX } from "lucide-react";
@@ -14,10 +13,6 @@ const Stat = ({ label, value }) => (
     </div>
   </div>
 );
-=======
-import { Link } from 'react-router-dom';
-import Button from '../components/Button';
->>>>>>> parent of a197612 (Event management)
 
 const HomeEventCard = ({ event }) => {
   const [imgFailed, setImgFailed] = useState(false);
@@ -69,7 +64,6 @@ const HomeEventCard = ({ event }) => {
 };
 
 const Home = () => {
-<<<<<<< HEAD
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -358,21 +352,6 @@ const Home = () => {
             </Link>
           </div>
         </div>
-=======
-  return (
-    <div className="text-center py-16">
-      <h1 className="text-5xl font-bold text-gray-900 mb-4">Welcome to Eventro</h1>
-      <p className="text-xl text-gray-600 mb-8">
-        Discover, create, and manage events seamlessly.
-      </p>
-      <div className="flex justify-center space-x-4">
-        <Link to="/events">
-          <Button>Browse Events</Button>
-        </Link>
-        <Link to="/events/create">
-          <Button variant="secondary">Create Event</Button>
-        </Link>
->>>>>>> parent of a197612 (Event management)
       </div>
     </div>
   );
