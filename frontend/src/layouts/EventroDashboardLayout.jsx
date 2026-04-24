@@ -1,23 +1,28 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate, useLocation, Outlet } from 'react-router-dom';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import logoImg from '../assets/icons/logo.png';
 import AdminSupportNotifications from '../components/AdminSupportNotifications';
 import {
-  LayoutDashboard,
-  CalendarDays,
-  Users,
-  Ticket,
-  QrCode,
   Calendar,
+  CalendarDays,
   CheckSquare,
-  Megaphone,
-  FileBarChart,
-  Settings,
-  HelpCircle,
-  Search,
   ChevronLeft,
   ChevronRight,
+  FileBarChart,
+  Handshake,
+  HelpCircle,
+  LayoutDashboard,
   LogOut,
+  Megaphone,
+  Menu,
+  MessageSquare,
+  QrCode,
+  RefreshCcw,
+  Search,
+  Settings,
+  Ticket,
+  Users,
+  X,
 } from 'lucide-react';
 
 const navItems = [
@@ -29,6 +34,9 @@ const navItems = [
   { icon: Calendar, label: 'Calendar', path: '/admin/calendar' },
   { icon: CheckSquare, label: 'Tasks', path: '/admin/tasks' },
   { icon: Megaphone, label: 'Marketing', path: '/admin/marketing' },
+  { icon: Handshake, label: 'Sponsorship', path: '/admin/sponsorship' },
+  { icon: MessageSquare, label: 'Feedback', path: '/admin/feedback' },
+  { icon: RefreshCcw, label: 'Refund', path: '/admin/refunds' },
   { icon: FileBarChart, label: 'Reports', path: '/admin/reports' },
 ];
 
@@ -39,6 +47,7 @@ const bottomItems = [
 
 const EventroDashboardLayout = () => {
   const [collapsed, setCollapsed] = useState(false);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -86,23 +95,57 @@ const EventroDashboardLayout = () => {
     localStorage.removeItem('eventro_admin_authenticated');
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    setMobileSidebarOpen(false);
     navigate('/eventro-admin', { replace: true });
   };
 
+  const handleNavigate = (path) => {
+    setMobileSidebarOpen(false);
+    navigate(path);
+  };
+
+  useEffect(() => {
+    if (mobileSidebarOpen) {
+      setMobileSidebarOpen(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname]);
+
   return (
     <div className="flex h-screen bg-slate-100 dark:bg-[#0B1120] text-slate-900 dark:text-white overflow-hidden">
+      {/* Mobile Backdrop */}
+      {mobileSidebarOpen && (
+        <button
+          type="button"
+          aria-label="Close sidebar"
+          onClick={() => setMobileSidebarOpen(false)}
+          className="fixed inset-0 z-30 bg-black/50 md:hidden"
+        />
+      )}
+
       {/* Sidebar */}
       <aside
-        className={`${
-          collapsed ? 'w-20' : 'w-64'
-        } flex flex-col bg-white dark:bg-[#0F1629] border-r border-slate-200 dark:border-slate-700/50 transition-all duration-300 shrink-0`}
+        className={`fixed inset-y-0 left-0 z-40 w-64 flex flex-col bg-white dark:bg-[#0F1629] border-r border-slate-200 dark:border-slate-700/50 transition-all duration-300 md:static md:translate-x-0 shrink-0 ${
+          mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        } ${collapsed ? 'md:w-20' : 'md:w-64'}`}
       >
         {/* Logo */}
-        <div className="flex items-center gap-3 px-5 py-6 border-b border-slate-200 dark:border-slate-700/50">
-          <img src={logoImg} alt="Eventro" className="h-9 w-9 rounded-xl shrink-0" />
+        <div className="flex items-center justify-between gap-3 px-5 py-5 border-b border-slate-200 dark:border-slate-700/50">
+          <div className="flex items-center gap-3">
+            <img src={logoImg} alt="Eventro" className="h-9 w-9 rounded-xl shrink-0" />
           {!collapsed && (
             <span className="text-xl font-bold tracking-tight">Eventro</span>
           )}
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setMobileSidebarOpen(false)}
+            className="md:hidden p-2 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-700/50 transition"
+            aria-label="Close menu"
+          >
+            <X size={18} />
+          </button>
         </div>
 
         {/* Main Nav */}
@@ -113,7 +156,7 @@ const EventroDashboardLayout = () => {
             return (
               <button
                 key={item.path}
-                onClick={() => navigate(item.path)}
+                onClick={() => handleNavigate(item.path)}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
                   isActive
                     ? 'bg-emerald-500/15 text-emerald-400'
@@ -135,7 +178,7 @@ const EventroDashboardLayout = () => {
             return (
               <button
                 key={item.path}
-                onClick={() => navigate(item.path)}
+                onClick={() => handleNavigate(item.path)}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
                   isActive
                     ? 'bg-emerald-500/15 text-emerald-400'
@@ -159,7 +202,7 @@ const EventroDashboardLayout = () => {
         {/* Collapse Button */}
         <button
           onClick={() => setCollapsed(!collapsed)}
-          className="mx-3 mb-4 p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700/50 transition flex items-center justify-center"
+          className="mx-3 mb-4 p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700/50 transition items-center justify-center hidden md:flex"
         >
           {collapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
         </button>
@@ -168,42 +211,67 @@ const EventroDashboardLayout = () => {
       {/* Main Area */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top Bar */}
-        <header className="flex items-center justify-between px-8 py-4 bg-white dark:bg-[#0F1629] border-b border-slate-200 dark:border-slate-700/50 shrink-0">
-          <h1 className="text-xl font-bold">Eventro Dashboard</h1>
-
-          <div className="flex items-center gap-5">
-            {/* Search */}
-            <div className="relative">
-              <Search
-                size={16}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 dark:text-slate-400"
-              />
-              <input
-                type="text"
-                placeholder="Search"
-                className="bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-600/50 rounded-xl pl-9 pr-4 py-2 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 w-56"
-              />
+        <header className="px-4 sm:px-8 py-3 sm:py-4 bg-white dark:bg-[#0F1629] border-b border-slate-200 dark:border-slate-700/50 shrink-0">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3 min-w-0">
+              <button
+                type="button"
+                onClick={() => setMobileSidebarOpen(true)}
+                className="md:hidden p-2 -ml-2 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-700/50 transition"
+                aria-label="Open menu"
+              >
+                <Menu size={20} />
+              </button>
+              <h1 className="text-lg sm:text-xl font-bold truncate">Eventro Dashboard</h1>
             </div>
 
-            <AdminSupportNotifications />
+            <div className="flex items-center gap-3 sm:gap-5">
+              {/* Search (desktop) */}
+              <div className="relative hidden sm:block">
+                <Search
+                  size={16}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 dark:text-slate-400"
+                />
+                <input
+                  type="text"
+                  placeholder="Search"
+                  className="bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-600/50 rounded-xl pl-9 pr-4 py-2 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 w-56"
+                />
+              </div>
 
-            {/* User */}
-            <div className="flex items-center gap-3">
-              <img
-                src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${avatarSeed}`}
-                alt="Avatar"
-                className="w-9 h-9 rounded-full ring-2 ring-slate-300 dark:ring-slate-600"
-              />
-              <div className="text-right hidden md:block">
-                <p className="text-sm font-semibold leading-tight">{adminProfile.name}</p>
-                <p className="text-xs text-slate-600 dark:text-slate-400">{adminProfile.role}</p>
+              <AdminSupportNotifications />
+
+              {/* User */}
+              <div className="flex items-center gap-3">
+                <img
+                  src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${avatarSeed}`}
+                  alt="Avatar"
+                  className="w-9 h-9 rounded-full ring-2 ring-slate-300 dark:ring-slate-600"
+                />
+                <div className="text-right hidden md:block">
+                  <p className="text-sm font-semibold leading-tight">{adminProfile.name}</p>
+                  <p className="text-xs text-slate-600 dark:text-slate-400">{adminProfile.role}</p>
+                </div>
               </div>
             </div>
+          </div>
+
+          {/* Search (mobile) */}
+          <div className="relative mt-3 sm:hidden">
+            <Search
+              size={16}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 dark:text-slate-400"
+            />
+            <input
+              type="text"
+              placeholder="Search"
+              className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-600/50 rounded-xl pl-9 pr-4 py-2 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+            />
           </div>
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 overflow-y-auto p-6">
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6">
           <Outlet />
         </main>
       </div>

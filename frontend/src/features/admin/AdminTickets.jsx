@@ -7,6 +7,7 @@ const AdminTickets = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [refundActionId, setRefundActionId] = useState(null);
 
   useEffect(() => {
     const fetchBookings = async () => {
@@ -22,6 +23,26 @@ const AdminTickets = () => {
     };
     fetchBookings();
   }, []);
+
+  const fetchBookings = async () => {
+    try {
+      const res = await api.get('/bookings');
+      const data = res.data?.bookings || res.data || [];
+      setBookings(Array.isArray(data) ? data : []);
+    } catch {
+      setBookings([]);
+    }
+  };
+
+  const reviewRefund = async (bookingId, decision) => {
+    try {
+      setRefundActionId(`${bookingId}:${decision}`);
+      await api.patch(`/bookings/${bookingId}/refund-request`, { decision });
+      await fetchBookings();
+    } finally {
+      setRefundActionId(null);
+    }
+  };
 
   const filtered = bookings.filter((b) => {
     const matchSearch =
@@ -115,6 +136,8 @@ const AdminTickets = () => {
                   <th className="text-left font-medium px-5 py-3">Qty</th>
                   <th className="text-left font-medium px-5 py-3">Total</th>
                   <th className="text-left font-medium px-5 py-3">Status</th>
+                  <th className="text-left font-medium px-5 py-3">Refund</th>
+                  <th className="text-left font-medium px-5 py-3">Action</th>
                   <th className="text-left font-medium px-5 py-3">Date</th>
                 </tr>
               </thead>
@@ -136,6 +159,33 @@ const AdminTickets = () => {
                       <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${statusColor(b.status)}`}>
                         {b.status}
                       </span>
+                    </td>
+                    <td className="px-5 py-3 text-xs text-slate-300 capitalize">
+                      {b.refundRequestStatus || 'none'}
+                    </td>
+                    <td className="px-5 py-3 text-xs">
+                      {b.refundRequestStatus === 'pending' ? (
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => reviewRefund(b._id, 'approve')}
+                            disabled={Boolean(refundActionId)}
+                            className="rounded-md bg-emerald-500/15 px-2.5 py-1 font-medium text-emerald-300 hover:bg-emerald-500/25 disabled:opacity-50"
+                          >
+                            {refundActionId === `${b._id}:approve` ? 'Approving…' : 'Approve'}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => reviewRefund(b._id, 'reject')}
+                            disabled={Boolean(refundActionId)}
+                            className="rounded-md bg-red-500/15 px-2.5 py-1 font-medium text-red-300 hover:bg-red-500/25 disabled:opacity-50"
+                          >
+                            {refundActionId === `${b._id}:reject` ? 'Rejecting…' : 'Reject'}
+                          </button>
+                        </div>
+                      ) : (
+                        <span className="text-slate-500">—</span>
+                      )}
                     </td>
                     <td className="px-5 py-3 text-slate-400 text-xs">
                       {b.createdAt ? new Date(b.createdAt).toLocaleDateString() : '—'}

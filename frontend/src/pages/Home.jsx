@@ -3,19 +3,7 @@ import { useState, useEffect } from "react";
 import { CalendarX } from "lucide-react";
 import Button from "../components/Button";
 import api from "../services/api";
-
-const FeatureCard = ({ title, desc, icon }) => (
-  <div className="group relative overflow-hidden rounded-2xl border border-white/10 bg-white/5 p-6 shadow-[0_10px_40px_-20px_rgba(0,0,0,0.6)] backdrop-blur-xl transition hover:bg-white/10">
-    <div className="absolute -right-16 -top-16 h-40 w-40 rounded-full bg-gradient-to-br from-violet-500/20 to-cyan-400/10 blur-2xl transition group-hover:from-violet-500/30 group-hover:to-cyan-400/20" />
-    <div className="relative">
-      <div className="mb-4 inline-flex h-11 w-11 items-center justify-center rounded-xl bg-white/10 ring-1 ring-white/15">
-        <span className="text-xl">{icon}</span>
-      </div>
-      <h3 className="text-lg font-semibold text-white">{title}</h3>
-      <p className="mt-2 text-sm leading-relaxed text-white/70">{desc}</p>
-    </div>
-  </div>
-);
+import { API_BASE_URL } from "../services/api";
 
 const Stat = ({ label, value }) => (
   <div className="rounded-2xl border border-white/10 bg-white/5 px-5 py-4 backdrop-blur-xl">
@@ -23,6 +11,55 @@ const Stat = ({ label, value }) => (
     <div className="mt-1 text-xs uppercase tracking-wider text-white/60">{label}</div>
   </div>
 );
+
+const HomeEventCard = ({ event }) => {
+  const [imgFailed, setImgFailed] = useState(false);
+
+  const imageVersion = event?.updatedAt ? new Date(event.updatedAt).getTime() : null;
+  const imageSrc = imageVersion
+    ? `${API_BASE_URL}/events/${event._id}/image?v=${imageVersion}`
+    : `${API_BASE_URL}/events/${event._id}/image`;
+
+  return (
+    <Link
+      to={`/events/${event._id}`}
+      className="shrink-0 w-[280px] sm:w-[320px] overflow-hidden rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl"
+    >
+      <div className="h-40 sm:h-44 bg-slate-800">
+        {!imgFailed ? (
+          <img
+            src={imageSrc}
+            alt={event.title}
+            loading="lazy"
+            decoding="async"
+            onError={() => setImgFailed(true)}
+            className="h-full w-full object-contain"
+          />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center text-white/25">
+            <CalendarX className="h-10 w-10" />
+          </div>
+        )}
+      </div>
+
+      <div className="p-4">
+        <div className="truncate text-base font-semibold text-white">
+          {event.title}
+        </div>
+        <div className="mt-1 text-sm text-white/60 truncate">
+          {event.date
+            ? new Date(event.date).toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+              })
+            : "Date TBA"}
+          {event.location ? ` • ${event.location}` : ""}
+        </div>
+      </div>
+    </Link>
+  );
+};
 
 const Home = () => {
   const [events, setEvents] = useState([]);
@@ -58,6 +95,11 @@ const Home = () => {
   const totalCreators = [
     ...new Set(countedEvents.map((e) => e.organizer?._id || e.organizer))
   ].filter(Boolean).length;
+
+  const marqueeEvents = countedEvents;
+  const marqueeLoop = marqueeEvents.length > 0
+    ? [...marqueeEvents, ...marqueeEvents]
+    : [];
 
   return (
     <div className="relative isolate overflow-hidden">
@@ -234,22 +276,28 @@ const Home = () => {
             </p>
           </div>
 
-          <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <FeatureCard
-              icon="✨"
-              title="Stunning Event Pages"
-              desc="Clean, modern layouts that make your events look premium and trustworthy."
-            />
-            <FeatureCard
-              icon="🗓️"
-              title="Simple Scheduling"
-              desc="Create, edit, and organize events quickly with a smooth flow."
-            />
-            <FeatureCard
-              icon="📈"
-              title="Insights & Growth"
-              desc="Track interest and attendance so you can improve each next event."
-            />
+          <div className="mt-8 overflow-hidden rounded-3xl border border-white/10 bg-white/5 p-4 backdrop-blur-xl">
+            {loading ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-indigo-400" />
+              </div>
+            ) : marqueeEvents.length > 0 ? (
+              <div className="relative">
+                <div className="flex w-max gap-4 animate-marquee">
+                  {marqueeLoop.map((event, idx) => (
+                    <HomeEventCard key={`${event._id}-${idx}`} event={event} />
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <div className="mb-3 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10">
+                  <CalendarX className="h-6 w-6 text-white/40" />
+                </div>
+                <div className="text-sm font-semibold text-white">No events yet</div>
+                <div className="mt-1 text-sm text-white/60">Create an event to see it here.</div>
+              </div>
+            )}
           </div>
         </div>
 

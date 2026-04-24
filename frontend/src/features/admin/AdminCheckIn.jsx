@@ -8,6 +8,7 @@ const AdminCheckIn = () => {
   const [checking, setChecking] = useState(false);
   const [stats, setStats] = useState(null);
   const [error, setError] = useState('');
+  const [scannerKey, setScannerKey] = useState(0);
 
   const eventId = useMemo(() => lastResult?.booking?.event?._id || null, [lastResult]);
 
@@ -42,10 +43,11 @@ const AdminCheckIn = () => {
     [fetchStats]
   );
 
-  const reset = async () => {
+  const reset = () => {
     setLastResult(null);
     setStats(null);
     setError('');
+    setScannerKey((k) => k + 1);
   };
 
   const booking = lastResult?.booking;
@@ -77,7 +79,7 @@ const AdminCheckIn = () => {
             </button>
           </div>
 
-          <QRScanner onScanSuccess={onScanSuccess} />
+          <QRScanner key={scannerKey} onScanSuccess={onScanSuccess} />
 
           {checking && (
             <p className="mt-3 text-sm text-slate-400">Validating…</p>

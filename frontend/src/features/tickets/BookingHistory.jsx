@@ -11,6 +11,12 @@ const statusStyles = {
   pending:   'bg-amber-500/15 text-amber-400 border border-amber-500/20',
 };
 
+const refundStatusStyles = {
+  pending: 'bg-amber-500/15 text-amber-300 border border-amber-500/20',
+  approved: 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/20',
+  rejected: 'bg-red-500/15 text-red-300 border border-red-500/20',
+};
+
 const BookingHistory = () => {
   // Avoid caching so new bookings appear immediately.
   const { data: bookings, loading, error, refetch } = useFetch('/bookings/my', { cache: false });
@@ -19,12 +25,36 @@ const BookingHistory = () => {
   const [transferLoadingId, setTransferLoadingId] = useState(null);
   const [transferError, setTransferError] = useState('');
   const [transferSuccess, setTransferSuccess] = useState('');
+  const [refundOpenId, setRefundOpenId] = useState(null);
+  const [refundReason, setRefundReason] = useState('');
+  const [refundBankDetails, setRefundBankDetails] = useState({
+    bankName: '',
+    accountHolderName: '',
+    accountNumber: '',
+    branchName: '',
+  });
+  const [refundLoadingId, setRefundLoadingId] = useState(null);
+  const [refundError, setRefundError] = useState('');
+  const [refundSuccess, setRefundSuccess] = useState('');
 
   const openTransfer = (bookingId) => {
     setTransferSuccess('');
     setTransferError('');
     setTransferEmail('');
     setTransferOpenId((prev) => (prev === bookingId ? null : bookingId));
+  };
+
+  const openRefund = (bookingId) => {
+    setRefundSuccess('');
+    setRefundError('');
+    setRefundReason('');
+    setRefundBankDetails({
+      bankName: '',
+      accountHolderName: '',
+      accountNumber: '',
+      branchName: '',
+    });
+    setRefundOpenId((prev) => (prev === bookingId ? null : bookingId));
   };
 
   const confirmTransfer = async (bookingId) => {
@@ -48,6 +78,48 @@ const BookingHistory = () => {
       setTransferError(message);
     } finally {
       setTransferLoadingId(null);
+    }
+  };
+
+  const submitRefundRequest = async (bookingId) => {
+    const bankName = String(refundBankDetails.bankName || '').trim();
+    const accountHolderName = String(refundBankDetails.accountHolderName || '').trim();
+    const accountNumber = String(refundBankDetails.accountNumber || '').trim();
+    const branchName = String(refundBankDetails.branchName || '').trim();
+
+    if (!bankName || !accountHolderName || !accountNumber || !branchName) {
+      setRefundError('Please provide your complete bank details for the refund.');
+      return;
+    }
+
+    try {
+      setRefundSuccess('');
+      setRefundError('');
+      setRefundLoadingId(bookingId);
+      await api.post(`/bookings/${bookingId}/refund-request`, {
+        reason: String(refundReason || '').trim(),
+        bankDetails: {
+          bankName,
+          accountHolderName,
+          accountNumber,
+          branchName,
+        },
+      });
+      await refetch?.();
+      setRefundSuccess('Refund request submitted. Awaiting admin approval.');
+      setRefundOpenId(null);
+      setRefundReason('');
+      setRefundBankDetails({
+        bankName: '',
+        accountHolderName: '',
+        accountNumber: '',
+        branchName: '',
+      });
+    } catch (err) {
+      const message = err?.response?.data?.message || err?.message || 'Failed to submit refund request';
+      setRefundError(message);
+    } finally {
+      setRefundLoadingId(null);
     }
   };
 
@@ -90,7 +162,7 @@ const BookingHistory = () => {
               key={booking._id}
               className="group rounded-xl border border-white/[0.06] bg-[#141B2D] p-5 transition-all hover:border-indigo-500/30 hover:bg-[#1a2235]"
             >
-              <div className="flex items-center justify-between gap-4">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 {/* Left: event info */}
                 <div className="min-w-0 flex-1 space-y-2">
                   <h3 className="truncate text-lg font-semibold text-white">
@@ -126,22 +198,33 @@ const BookingHistory = () => {
                 </div>
 
                 {/* Right: action */}
-                <div className="flex shrink-0 items-center gap-2">
+                <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
                   {booking.status === 'confirmed' && (
                     <button
                       type="button"
                       onClick={() => openTransfer(booking._id)}
                       disabled={transferLoadingId === booking._id}
-                      className="rounded-lg bg-white/5 px-4 py-2 text-sm font-medium text-slate-200 transition-colors hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
+                      className="w-full rounded-lg bg-white/5 px-4 py-2 text-sm font-medium text-slate-200 transition-colors hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
                     >
                       Transfer
+                    </button>
+                  )}
+
+                  {booking.status === 'confirmed' && Number(booking.totalPrice || 0) > 0 && booking.refundRequestStatus !== 'pending' && (
+                    <button
+                      type="button"
+                      onClick={() => openRefund(booking._id)}
+                      disabled={refundLoadingId === booking._id}
+                      className="w-full rounded-lg bg-red-500/10 px-4 py-2 text-sm font-medium text-red-300 transition-colors hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+                    >
+                      Request Refund
                     </button>
                   )}
 
                   <Link
                     to={`/bookings/${booking._id}/ticket`}
                     state={{ booking }}
-                    className="flex items-center gap-1 rounded-lg bg-indigo-500/15 px-4 py-2 text-sm font-medium text-indigo-400 transition-colors hover:bg-indigo-500/25"
+                    className="flex w-full items-center justify-center gap-1 rounded-lg bg-indigo-500/15 px-4 py-2 text-sm font-medium text-indigo-400 transition-colors hover:bg-indigo-500/25 sm:w-auto"
                   >
                     View Ticket
                     <ChevronRight className="h-4 w-4" />
@@ -163,12 +246,12 @@ const BookingHistory = () => {
                       <p className="mt-1 text-xs text-slate-400">Recipient must already have an Eventro account.</p>
                     </div>
 
-                    <div className="flex gap-2">
+                    <div className="flex flex-col gap-2 sm:flex-row">
                       <button
                         type="button"
                         onClick={() => confirmTransfer(booking._id)}
                         disabled={transferLoadingId === booking._id}
-                        className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-60"
+                        className="w-full rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
                       >
                         {transferLoadingId === booking._id ? 'Transferring…' : 'Confirm'}
                       </button>
@@ -176,7 +259,7 @@ const BookingHistory = () => {
                         type="button"
                         onClick={() => setTransferOpenId(null)}
                         disabled={transferLoadingId === booking._id}
-                        className="rounded-lg bg-white/5 px-4 py-2 text-sm font-medium text-slate-200 transition-colors hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
+                        className="w-full rounded-lg bg-white/5 px-4 py-2 text-sm font-medium text-slate-200 transition-colors hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
                       >
                         Cancel
                       </button>
@@ -195,6 +278,93 @@ const BookingHistory = () => {
                   )}
                 </div>
               )}
+
+              {booking.refundRequestStatus && booking.refundRequestStatus !== 'none' && (
+                <div className="mt-3">
+                  <span
+                    className={`inline-block rounded-full px-2.5 py-1 text-xs font-medium capitalize ${refundStatusStyles[booking.refundRequestStatus] || refundStatusStyles.pending}`}
+                  >
+                    Refund {booking.refundRequestStatus}
+                  </span>
+                  {booking.refundReviewNote && (
+                    <p className="mt-2 text-xs text-slate-400">Admin note: {booking.refundReviewNote}</p>
+                  )}
+                </div>
+              )}
+
+              {refundOpenId === booking._id && (
+                <div className="mt-4 rounded-xl border border-white/[0.06] bg-white/5 p-4">
+                  <label className="block text-xs font-medium text-slate-300">Reason for refund request (optional)</label>
+                  <textarea
+                    value={refundReason}
+                    onChange={(e) => setRefundReason(e.target.value)}
+                    rows={3}
+                    placeholder="Tell us why you need a refund..."
+                    className="mt-1 w-full rounded-lg border border-white/[0.08] bg-[#0f1526] px-3 py-2 text-sm text-white placeholder:text-slate-500 focus:border-indigo-500/40 focus:outline-none"
+                  />
+
+                  <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                    <div>
+                      <label className="block text-xs font-medium text-slate-300">Bank Name</label>
+                      <input
+                        value={refundBankDetails.bankName}
+                        onChange={(e) => setRefundBankDetails((prev) => ({ ...prev, bankName: e.target.value }))}
+                        placeholder="Bank of Ceylon"
+                        className="mt-1 w-full rounded-lg border border-white/[0.08] bg-[#0f1526] px-3 py-2 text-sm text-white placeholder:text-slate-500 focus:border-indigo-500/40 focus:outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-medium text-slate-300">Account Holder Name</label>
+                      <input
+                        value={refundBankDetails.accountHolderName}
+                        onChange={(e) => setRefundBankDetails((prev) => ({ ...prev, accountHolderName: e.target.value }))}
+                        placeholder="Name as per bank account"
+                        className="mt-1 w-full rounded-lg border border-white/[0.08] bg-[#0f1526] px-3 py-2 text-sm text-white placeholder:text-slate-500 focus:border-indigo-500/40 focus:outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-medium text-slate-300">Account Number</label>
+                      <input
+                        value={refundBankDetails.accountNumber}
+                        onChange={(e) => setRefundBankDetails((prev) => ({ ...prev, accountNumber: e.target.value }))}
+                        placeholder="0123456789"
+                        className="mt-1 w-full rounded-lg border border-white/[0.08] bg-[#0f1526] px-3 py-2 text-sm text-white placeholder:text-slate-500 focus:border-indigo-500/40 focus:outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-medium text-slate-300">Branch Name</label>
+                      <input
+                        value={refundBankDetails.branchName}
+                        onChange={(e) => setRefundBankDetails((prev) => ({ ...prev, branchName: e.target.value }))}
+                        placeholder="Colombo Main"
+                        className="mt-1 w-full rounded-lg border border-white/[0.08] bg-[#0f1526] px-3 py-2 text-sm text-white placeholder:text-slate-500 focus:border-indigo-500/40 focus:outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+                    <button
+                      type="button"
+                      onClick={() => submitRefundRequest(booking._id)}
+                      disabled={refundLoadingId === booking._id}
+                      className="w-full rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+                    >
+                      {refundLoadingId === booking._id ? 'Submitting…' : 'Submit Request'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setRefundOpenId(null)}
+                      disabled={refundLoadingId === booking._id}
+                      className="w-full rounded-lg bg-white/5 px-4 py-2 text-sm font-medium text-slate-200 transition-colors hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -209,6 +379,17 @@ const BookingHistory = () => {
           >
             Browse Events
           </Link>
+        </div>
+      )}
+
+      {refundError && (
+        <div className="mt-4 rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-sm text-red-300">
+          {refundError}
+        </div>
+      )}
+      {refundSuccess && (
+        <div className="mt-4 rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-300">
+          {refundSuccess}
         </div>
       )}
     </div>

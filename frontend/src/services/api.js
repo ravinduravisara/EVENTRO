@@ -1,7 +1,24 @@
 import axios from 'axios';
 
+const normalizeBaseURL = (value) => {
+  const raw = String(value).trim().replace(/\/+$/, '');
+  return /\/api$/i.test(raw) ? raw : `${raw}/api`;
+};
+
+const getBaseURL = () => {
+  const configured = import.meta.env.VITE_BACKEND_URL || import.meta.env.VITE_API_URL;
+  if (configured) {
+    return normalizeBaseURL(configured);
+  }
+
+  // Local development uses Vite proxy.
+  return '/api';
+};
+
+export const API_BASE_URL = getBaseURL();
+
 const api = axios.create({
-  baseURL: '/api',
+  baseURL: API_BASE_URL,
   headers: { 'Content-Type': 'application/json' },
 });
 
