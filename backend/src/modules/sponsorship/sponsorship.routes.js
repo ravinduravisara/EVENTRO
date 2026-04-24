@@ -2,7 +2,6 @@ const express = require("express");
 const router = express.Router();
 
 const sponsorshipController = require("./sponsorship.controller");
-const dealsRoutes = require("./sponsorshipDeals.routes");
 const auth = require("../../middleware/auth");
 const roleCheck = require("../../middleware/roleCheck");
 
@@ -25,7 +24,5 @@ router.patch(
   sponsorshipController.approveInquiry,
 );
 
-// Deals + analytics
-router.use("/", dealsRoutes);
 
 module.exports = router;
