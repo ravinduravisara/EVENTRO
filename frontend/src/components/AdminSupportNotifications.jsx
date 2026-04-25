@@ -270,7 +270,7 @@ const AdminSupportNotifications = () => {
                             key={`${selectedThread._id}-${index}-${message.createdAt}`}
                             className={`max-w-[90%] rounded-2xl px-4 py-3 ${
                               isAdminMessage
-                                ? 'ml-auto bg-emerald-500 text-slate-950'
+                                ? 'ml-auto bg-blue-500 text-white'
                                 : 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-100'
                             }`}
                           >
